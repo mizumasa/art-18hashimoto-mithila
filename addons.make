@@ -1,0 +1,6 @@
+ofxBlackmagic
+ofxBox2d
+ofxDelaunay
+ofxGui
+ofxOpenCv
+ofxOsc
