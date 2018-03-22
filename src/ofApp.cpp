@@ -41,11 +41,28 @@ void testApp::setup() {
             edges.push_back(edge);
         }
     }
+    b_Auto = true;
 }
 
 //--------------------------------------------------------------
 void testApp::update() {
-	box2d.update();	
+	box2d.update();
+    
+    if(b_Auto){
+        for(int i=0;i<10;i++){
+            shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
+            p.get()->setPhysics(1.0, 0, 0);
+            p.get()->setup(box2d.getWorld(), ofGetWidth()*ofRandomf(), ofGetHeight()*ofRandomf(), ofRandom(20, 60));
+            p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
+            p.get()->setupTheCustomData();
+            particles.push_back(p);
+        }
+    }
+    particles[0]->update();
+    
+    /*for(int i=0;i<particles.size();i++){
+        particles[i].get()->setRadius(MIN(100, particles[i].get()->getRadius()+1));
+    }*/
 }
 
 //--------------------------------------------------------------
@@ -81,6 +98,9 @@ void testApp::keyPressed(int key) {
         case 'f':
             ofToggleFullscreen();
             break;
+        case ' ':
+            b_Auto = !b_Auto;
+            break;
     }
 }
 
@@ -92,8 +112,9 @@ void testApp::mouseMoved(int x, int y ) {
 void testApp::mousePressed(int x, int y, int button) {
 	shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
 	p.get()->setPhysics(1.0, 0.5, 0.3);
+    p.get()->setFriction(0);
 	p.get()->setup(box2d.getWorld(), x, y, ofRandom(20, 60));
-    p.get()->setVelocity(ofRandom(-30, 30), ofRandom(-30, 30));
+    p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
 	p.get()->setupTheCustomData();
 	particles.push_back(p);
 
