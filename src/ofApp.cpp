@@ -3,8 +3,9 @@
 //--------------------------------------------------------------
 void testApp::setup() {
     
-	ofBackgroundHex(0xfdefc2);
-	ofSetLogLevel(OF_LOG_NOTICE);
+	//ofBackgroundHex(0xfdefc2);
+    ofBackgroundHex(0xffffff);
+    ofSetLogLevel(OF_LOG_NOTICE);
 	ofSetVerticalSync(true);
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     
@@ -15,33 +16,50 @@ void testApp::setup() {
 	box2d.createBounds();
 	box2d.setFPS(60.0);
 	
-    // load the lines we saved...
-    ifstream f;
-    f.open(ofToDataPath("lines.txt").c_str());
-    vector <string> strLines;
-    while (!f.eof()) {
-        string ptStr;
-        getline(f, ptStr);
-        strLines.push_back(ptStr);
-    }
-    f.close();
     
-    for (int i=0; i<strLines.size(); i++) {
-        vector <string> pts = ofSplitString(strLines[i], ",");
-        if(pts.size() > 0) {
-            shared_ptr <ofxBox2dEdge> edge = shared_ptr<ofxBox2dEdge>(new ofxBox2dEdge);
-            for (int j=0; j<pts.size(); j+=2) {
-                if(pts[j].size() > 0) {
-                    float x = ofToFloat(pts[j]);
-                    float y = ofToFloat(pts[j+1]);
-                    edge.get()->addVertex(x, y);
+    ofDirectory dir;
+    int n = dir.listDir("textures");
+    for (int i=0; i<n; i++) {
+        textures.push_back(ofImage(dir.getPath(i)));
+    }
+    printf("%i Textures Loaded\n", (int)textures.size());
+
+    for (int i=0; i<n; i++) {
+        vi_TextureSize.push_back(ofRandom(20, 60));
+    }
+    
+    // load the lines we saved...
+    if(0){
+        ifstream f;
+        f.open(ofToDataPath("lines.txt").c_str());
+        vector <string> strLines;
+        while (!f.eof()) {
+            string ptStr;
+            getline(f, ptStr);
+            strLines.push_back(ptStr);
+        }
+        f.close();
+        
+        for (int i=0; i<strLines.size(); i++) {
+            vector <string> pts = ofSplitString(strLines[i], ",");
+            if(pts.size() > 0) {
+                shared_ptr <ofxBox2dEdge> edge = shared_ptr<ofxBox2dEdge>(new ofxBox2dEdge);
+                for (int j=0; j<pts.size(); j+=2) {
+                    if(pts[j].size() > 0) {
+                        float x = ofToFloat(pts[j]);
+                        float y = ofToFloat(pts[j+1]);
+                        edge.get()->addVertex(x, y);
+                    }
                 }
+                edge.get()->create(box2d.getWorld());
+                edges.push_back(edge);
             }
-            edge.get()->create(box2d.getWorld());
-            edges.push_back(edge);
         }
     }
+    
+    
     b_Auto = true;
+    b_Debug = false;
 }
 
 //--------------------------------------------------------------
@@ -50,11 +68,13 @@ void testApp::update() {
     
     if(b_Auto){
         for(int i=0;i<10;i++){
+            int textureIdx = (int)ofRandom(textures.size());
             shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
             p.get()->setPhysics(1.0, 0, 0);
-            p.get()->setup(box2d.getWorld(), ofGetWidth()*ofRandomf(), ofGetHeight()*ofRandomf(), ofRandom(20, 60));
+            p.get()->setup(box2d.getWorld(), ofGetWidth()*ofRandomf(), ofGetHeight()*ofRandomf(), vi_TextureSize[textureIdx]);
             p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
             p.get()->setupTheCustomData();
+            p.get()->setTexture(&textures[textureIdx]);
             particles.push_back(p);
         }
     }
@@ -101,6 +121,12 @@ void testApp::keyPressed(int key) {
         case ' ':
             b_Auto = !b_Auto;
             break;
+        case 'd':
+            b_Debug = !b_Debug;
+            for(int i=0; i<particles.size(); i++) {
+                particles[i]->b_Debug = b_Debug;
+            }
+            break;
     }
 }
 
@@ -110,14 +136,21 @@ void testApp::mouseMoved(int x, int y ) {
 
 //--------------------------------------------------------------
 void testApp::mousePressed(int x, int y, int button) {
-	shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
+	
+    /*shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
 	p.get()->setPhysics(1.0, 0.5, 0.3);
     p.get()->setFriction(0);
 	p.get()->setup(box2d.getWorld(), x, y, ofRandom(20, 60));
     p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
 	p.get()->setupTheCustomData();
 	particles.push_back(p);
+*/
+    ofVec2f pos = ofVec2f(x,y);
+    for(int i=0;i<particles.size();i++){
+        particles[i].get()->deletePos(pos);
+    }
 
+    
     lines.push_back(ofPolyline());
     lines.back().addVertex(x, y);
 

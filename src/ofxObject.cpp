@@ -30,40 +30,53 @@ void CustomParticle::setupTheCustomData() {
     theData->iconId = ofRandom(0, 6);
     
     printf("setting the custom data!\n");
-    
+    b_Debug = false;
 }
 
 void CustomParticle::update() {
     vvf_Vel.push_back(getVelocity());
+    
     if(vvf_Vel.size()>5){
         vvf_Vel.erase(vvf_Vel.begin());
         cout << vvf_Vel[0]  << vvf_Vel[1] <<  vvf_Vel[2]  << vvf_Vel[3] << vvf_Vel[4] << endl;
     }
 }
 
+void CustomParticle::setTexture(ofImage * texture) {
+    texturePtr = texture;
+}
+
+void CustomParticle::deletePos(ofVec2f pos){
+    if( (getPosition() - pos).length() < getRadius() ){
+        destroy();
+    }
+}
+
+
 void CustomParticle::draw() {
     Data* theData = (Data*)getData();
     if(theData) {
-        
-        // Evan though we know the data object lets just
-        // see how we can get the data out from box2d
-        // you would use this when using a contact listener
-        // or tapping into box2d's solver.
         
         float radius = getRadius();
         ofPushMatrix();
         ofTranslate(getPosition());
         ofRotateZ(getRotation());
+        
         ofSetColor(theData->color);
         ofFill();
-        ofCircle(0, 0, radius);
         
-        float textSize = radius/10;
+        if(b_Debug){
+            ofCircle(0, 0, radius);
+        }else{
+            texturePtr->draw(-radius*0.9, -radius*0.9, radius*2*0.9,radius*2*0.9);
+        }
+        
+        /*float textSize = radius/10;
         ofPushMatrix();
         ofScale(textSize, textSize);
         ofSetColor(255);
         ofDrawBitmapString(theData->name, -textSize/2, textSize);
-        ofPopMatrix();
+        ofPopMatrix();*/
         
         ofPopMatrix();
     }

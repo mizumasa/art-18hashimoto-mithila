@@ -27,5 +27,9 @@ public:
     vector <ofPolyline>                 lines;
     vector <shared_ptr<ofxBox2dEdge> >  edges;
     bool                                b_Auto;
+    bool                                b_Debug;
 
+    vector <ofImage> textures;
+    vector <int> vi_TextureSize;
+    
 };
