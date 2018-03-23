@@ -2,7 +2,6 @@
 
 //--------------------------------------------------------------
 void testApp::setup() {
-    
 	//ofBackgroundHex(0xfdefc2);
     ofBackgroundHex(0xffffff);
     ofSetLogLevel(OF_LOG_NOTICE);
@@ -10,12 +9,19 @@ void testApp::setup() {
     ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL);
     
     ofToggleFullscreen();
+    fullWidth = ofGetWidth();
+    fullHeight = ofGetHeight();
+    ofToggleFullscreen();
+    ofSetWindowShape( fullWidth/2 ,fullHeight );
 	// Box2d
 	box2d.init();
 	box2d.setGravity(0, 0);
 	box2d.createBounds();
 	box2d.setFPS(60.0);
-	
+    ofToggleFullscreen();
+    
+    //ofSetWindowShape(ofGetWidth()*2, ofGetHeight());
+
     
     ofDirectory dir;
     int n = dir.listDir("textures");
@@ -60,10 +66,16 @@ void testApp::setup() {
     
     b_Auto = true;
     b_Debug = false;
+    
+    setupSequence();
+
 }
 
 //--------------------------------------------------------------
 void testApp::update() {
+    sequence.update();
+    updateSequence();
+    
 	box2d.update();
     
     if(b_Auto){
@@ -71,7 +83,7 @@ void testApp::update() {
             int textureIdx = (int)ofRandom(textures.size());
             shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
             p.get()->setPhysics(1.0, 0, 0);
-            p.get()->setup(box2d.getWorld(), ofGetWidth()*ofRandomf(), ofGetHeight()*ofRandomf(), vi_TextureSize[textureIdx]);
+            p.get()->setup(box2d.getWorld(),  fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), vi_TextureSize[textureIdx]);
             p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
             p.get()->setupTheCustomData();
             p.get()->setTexture(&textures[textureIdx]);
@@ -87,7 +99,8 @@ void testApp::update() {
 
 //--------------------------------------------------------------
 void testApp::draw() {
-	
+
+    ofSetHexColor(0xffffff);
 	for(int i=0; i<particles.size(); i++) {
 		particles[i].get()->draw();
 	}
@@ -183,3 +196,41 @@ void testApp::mouseReleased(int x, int y, int button) {
 void testApp::windowResized(int w, int h) {
 }
 
+void testApp::setupSequence(){
+    /*
+     AID_INIT = 0,
+     AID_WAITING,
+     AID_COUNT_3,
+     AID_COUNT_2,
+     AID_COUNT_1,
+     AID_SHOOT,//5
+     AID_EDIT,
+     AID_RESULT_SHOW,
+     AID_GOODBYE,
+     */
+    sequence.pushData(ofxFragment(1,AID_INIT,2));
+    sequence.pushData(ofxFragment(2,AID_WAITING,3));
+    sequence.pushData(ofxFragment(3,AID_COUNT_3,1));
+    sequence.pushData(ofxFragment(4,AID_COUNT_2,1));
+    sequence.pushData(ofxFragment(5,AID_COUNT_1,1));
+    sequence.pushData(ofxFragment(6,AID_SHOOT,1,2));
+    sequence.pushData(ofxFragment(7,AID_EDIT,1,2));
+    sequence.pushData(ofxFragment(8,AID_RESULT_SHOW,3));
+    sequence.pushData(ofxFragment(9,2,AID_GOODBYE,3));
+    
+    
+    sequence.setup();
+    sequence.play();
+}
+
+void testApp::updateSequence(){
+    if(sequence.getChanged()){
+        int param;
+        param = sequence.getParamNow();
+        cout<<"[Sequence]"<<sequence.getIdNow()<<":param"<<param<<endl;
+        switch(sequence.getIdNow()){
+            case AID_INIT:
+                break;
+        }
+    }
+}

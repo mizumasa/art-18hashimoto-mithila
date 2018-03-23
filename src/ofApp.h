@@ -3,6 +3,8 @@
 #include "ofxBox2d.h"
 #include "ofxObject.h"
 
+#include "ofxTimeLine.h"
+
 
 
 // ------------------------------------------------- App
@@ -11,7 +13,10 @@ class testApp : public ofBaseApp {
 public:
 	
 	void setup();
+    void setupSequence();
+
 	void update();
+    void updateSequence();
 	void draw();
 	
 	void keyPressed  (int key);
@@ -32,4 +37,9 @@ public:
     vector <ofImage> textures;
     vector <int> vi_TextureSize;
     
+    int fullWidth;
+    int fullHeight;
+    
+    ofxSequence sequence;
+
 };

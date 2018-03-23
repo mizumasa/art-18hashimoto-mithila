@@ -29,7 +29,6 @@ void CustomParticle::setupTheCustomData() {
     theData->color.setHex(colors[(int)ofRandom(0, 3)]);
     theData->iconId = ofRandom(0, 6);
     
-    printf("setting the custom data!\n");
     b_Debug = false;
 }
 
@@ -38,7 +37,7 @@ void CustomParticle::update() {
     
     if(vvf_Vel.size()>5){
         vvf_Vel.erase(vvf_Vel.begin());
-        cout << vvf_Vel[0]  << vvf_Vel[1] <<  vvf_Vel[2]  << vvf_Vel[3] << vvf_Vel[4] << endl;
+        //cout << vvf_Vel[0]  << vvf_Vel[1] <<  vvf_Vel[2]  << vvf_Vel[3] << vvf_Vel[4] << endl;
     }
 }
 
@@ -62,10 +61,10 @@ void CustomParticle::draw() {
         ofTranslate(getPosition());
         ofRotateZ(getRotation());
         
-        ofSetColor(theData->color);
-        ofFill();
         
         if(b_Debug){
+            ofSetColor(theData->color);
+            ofFill();
             ofCircle(0, 0, radius);
         }else{
             texturePtr->draw(-radius*0.9, -radius*0.9, radius*2*0.9,radius*2*0.9);
