@@ -1,0 +1,20 @@
+Client ID:
+
+d2b14e2d0051120
+Client secret:
+
+c354854c2797da7b7814013360bd730ff805e3af
+
+
+
+pip install imgurpython
+
+import sys
+import os.path
+from imgurpython import ImgurClient
+import pyperclip
+client_id = 'd2b14e2d0051120'
+client_secret = 'c354854c2797da7b7814013360bd730ff805e3af'
+client = ImgurClient(client_id, client_secret)
+res = client.upload_from_path("/Users/masarumizuochi/photo/portraitSketch/0.jpg")
+
