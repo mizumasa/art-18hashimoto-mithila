@@ -74,7 +74,7 @@ void ofxSequence::update(){
             t_FragmentStartTime = ofGetElapsedTimeMillis();
         }
         if(ofGetElapsedTimeMillis() > (t_FragmentStartTime+nowFragment.f_Length*i_TimeUnitMsec)){
-            cout <<"[Sequence]"<< nowFragment.actId << endl;
+            cout <<"[Sequence] "<< nowFragment.actId <<" finished"<< endl;
             b_Changed = true;
             int nextId = nowFragment.i_nextFragId;
             nowFragment = getNextFrag(nextId);

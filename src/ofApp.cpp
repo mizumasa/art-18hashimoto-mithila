@@ -34,6 +34,20 @@ void testApp::setup() {
         vi_TextureSize.push_back(ofRandom(20, 60));
     }
     
+    
+#ifdef _USE_LIVE_VIDEO
+#ifdef _USE_BLACKMAGIC
+    cam.setup(BLACKMAGIC_W, BLACKMAGIC_H, BLACKMAGIC_FPS);
+#else
+    vidGrabber.setDeviceID(0);
+    vidGrabber.initGrabber(WEB_CAM_W,WEB_CAM_H);
+#endif
+#else
+    movie.loadMovie("MAH00013.MP4");
+    movie.setVolume(0.0);
+    movie.play();
+#endif
+    
     // load the lines we saved...
     if(0){
         ifstream f;
@@ -66,15 +80,18 @@ void testApp::setup() {
     
     b_Auto = true;
     b_Debug = false;
+    b_GrabScreen = false;
     
     setupSequence();
 
+    avoidImage.load("sampleShadow.png");
 }
 
 //--------------------------------------------------------------
 void testApp::update() {
     sequence.update();
     updateSequence();
+    updateCam();
     
 	box2d.update();
     
@@ -97,8 +114,24 @@ void testApp::update() {
     }*/
 }
 
+
+
+
 //--------------------------------------------------------------
 void testApp::draw() {
+    
+    ofSetHexColor(0xffffff);
+    
+    //inputCam.draw(0, 0, 320, 180);
+    //cropCam.draw(0, 400);
+    drawW = ofGetWidth() / 2 * 0.8;
+    drawH = (int)(drawW * CANVAS_H / CANVAS_W);
+    drawX = ofGetWidth()/2 * 0.1;
+    drawY = (ofGetHeight() - drawH)/2;
+    inputCam.draw(drawX, drawY, drawW, drawH);
+    avoidImage.draw(drawX, drawY, drawW, drawH);
+    
+    contourFinder.draw(drawX,drawY);
 
     ofSetHexColor(0xffffff);
 	for(int i=0; i<particles.size(); i++) {
@@ -118,6 +151,12 @@ void testApp::draw() {
 	info += "\nClick to add particles\nThe letters and color are from the custom data.";
 	ofSetHexColor(0x444342);
 	ofDrawBitmapString(info, 20, 20);
+    
+    if(b_GrabScreen){
+        b_GrabScreen = false;
+        imgGrab.grabScreen(drawX, drawY , drawW, drawH);
+        imgGrab.save("screenshot.png");
+    }
 }
 
 
@@ -127,9 +166,13 @@ void testApp::keyPressed(int key) {
         case 'c':
             lines.clear();
             edges.clear();
+            avoidEdges.clear();
             break;
         case 'f':
             ofToggleFullscreen();
+            break;
+        case 's':
+            b_GrabScreen = true;
             break;
         case ' ':
             b_Auto = !b_Auto;
@@ -139,6 +182,30 @@ void testApp::keyPressed(int key) {
             for(int i=0; i<particles.size(); i++) {
                 particles[i]->b_Debug = b_Debug;
             }
+            break;
+        case 'r':
+            avoidImage.resize(drawW, drawH);
+            colorImg.allocate(drawW, drawH);
+            grayImage.allocate(drawW, drawH);
+            colorImg.setFromPixels(avoidImage.getPixels().getData(),drawW,drawH);
+            grayImage = colorImg;
+            grayImage.threshold(100);
+            contourFinder.findContours(grayImage, 20,
+                                       (drawW * drawH)/3, 10, true);
+            
+            ofPoint pointBuf;
+            pointBuf.set(drawX, drawY);
+            
+            for(int i = 0; i< contourFinder.nBlobs; i++){
+                shared_ptr <ofxBox2dEdge> edge = shared_ptr<ofxBox2dEdge>(new ofxBox2dEdge);
+                for(int j = 0; j<contourFinder.blobs[i].pts.size(); j++){
+                    edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[j]);
+                }
+                edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[0]);
+                edge.get()->create(box2d.getWorld());
+                avoidEdges.push_back(edge);
+            }
+            
             break;
     }
 }
@@ -227,10 +294,98 @@ void testApp::updateSequence(){
     if(sequence.getChanged()){
         int param;
         param = sequence.getParamNow();
-        cout<<"[Sequence]"<<sequence.getIdNow()<<":param"<<param<<endl;
+        cout<<"[Sequence] "<<sequence.getIdNow()<<" :param "<<param<<endl;
         switch(sequence.getIdNow()){
             case AID_INIT:
                 break;
+            case AID_WAITING:
+                break;
+            case AID_COUNT_3:
+                break;
+            case AID_COUNT_2:
+                break;
+            case AID_COUNT_1:
+                break;
+            case AID_SHOOT:
+                break;
+            case AID_EDIT:
+                break;
+            case AID_RESULT_SHOW:
+                break;
+            case AID_GOODBYE:
+                break;
         }
     }
+}
+
+
+void testApp::updateCam(){
+#ifdef _USE_LIVE_VIDEO
+#ifdef _USE_BLACKMAGIC
+    if(cam.update()){
+        timer.tick();
+        //b_CamStart=true;
+        camPixels=cam.getColorPixels();
+        camPixels.resize(CAPTURE_W, CAPTURE_H);
+        camPixels.setImageType(OF_IMAGE_COLOR);
+
+        //perspective.setPixels(camPixels);
+        //perspective.update();
+        //colorImg.setFromPixels(camPixels);
+        /*grayImage = colorImg;
+        if(b_DrawImage){
+            //detect.setPixels(grayImage.getPixels());
+            detect.setColorPixels(colorImg.getPixels());
+        }else{
+            detect.setColorPixels(perspective.getPixels());
+        }*/
+        //camImg.setFromPixels(camPixels.getData(), BLACKMAGIC_W, BLACKMAGIC_H, OF_IMAGE_COLOR_ALPHA);
+    }
+    
+#else
+    
+    vidGrabber.update();
+    
+    if (vidGrabber.isFrameNew()){
+        camPixels = vidGrabber.getPixels();
+        camPixels.resize(CAPTURE_W, CAPTURE_H);
+        
+        inputCam.setFromPixels(camPixels);
+        inputCam.crop((CAPTURE_W - CANVAS_W)/2 , 0, CANVAS_W, CANVAS_H);
+        cropCam = inputCam;
+        //perspective.setPixels(vidGrabber.getPixels());
+        //perspective.update();
+        
+        //colorImg.setFromPixels(vidGrabber.getPixels());
+        /*grayImage = colorImg;
+        if(b_DrawImage){
+            //detect.setPixels(grayImage.getPixels());
+            detect.setColorPixels(colorImg.getPixels());
+        }else{
+            detect.setColorPixels(perspective.getPixels());
+        }*/
+    }
+    
+#endif
+    
+#else
+    movie.update();
+    if(movie.isFrameNew()) {
+        ofPixels movieBuf;
+        movieBuf = movie.getPixels();
+        movieBuf.resize(CAPTURE_W,CAPTURE_H);
+        
+        //perspective.setPixels(movieBuf);
+        //perspective.update();
+        
+        //colorImg.setFromPixels(movieBuf);
+        /*grayImage = colorImg;
+        if(b_DrawImage){
+            //detect.setPixels(grayImage.getPixels());
+            detect.setColorPixels(colorImg.getPixels());
+        }else{
+            detect.setColorPixels(perspective.getPixels());
+        }*/
+    }
+#endif
 }
