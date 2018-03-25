@@ -35,6 +35,8 @@
 #define OSC_PORT_OF2PY 7110
 #define OSC_PORT_PY2OF 7111
 
+#define EDIT_SIZE 100
+
 class RateTimer {
 protected:
     float lastTick, averagePeriod, smoothing;
@@ -106,6 +108,8 @@ public:
     vector <shared_ptr<ofxBox2dEdge> >  edges;
     bool                                b_Auto;
     bool                                b_Debug;
+    bool                                b_Edit;
+    vector<ofVec2f> vvf_EditLog;
 
 
     vector <shared_ptr<ofxBox2dEdge> >  avoidEdges;

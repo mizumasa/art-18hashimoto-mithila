@@ -49,18 +49,37 @@ public:
         
         mesh.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
         int   nPts  = 8;
-        float scale = r / (float)texturePtr->getWidth();
-        for (int i=0; i<nPts; i++) {
-            float n = ofMap(i, 0, nPts-1, 0.0, TWO_PI);
-            float x = cos(n);
-            float y = sin(n);
-            float d = ofRandom(-r/2, r/2);
-            polyShape.addVertex(ofPoint(cx + (x * r + d), cy + (y * r + d)));
-            mesh.addTexCoord(ofPoint(0, 0));
-            mesh.addTexCoord(ofPoint(x * scale, y * scale));
-        }
         
-        polyShape.setPhysics(0.3, 0.5, 0.1);
+        switch (textureIdx){
+            case 0:
+                polyShape.addVertex(ofPoint(cx + (r * -0.96), cy + (r * -0.24)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.98), cy + (r * -0.68)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.5), cy + (r * -0.92)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.66), cy + (r * -0.42)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.96), cy + (r * 0.62)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.28), cy + (r * 0.92)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.08), cy + (r * 0.84)));
+                break;
+            case 1:
+                polyShape.addVertex(ofPoint(cx + (r * -0.68), cy + (r * -0.04)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.68), cy + (r * -0.62)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.08), cy + (r * -0.94)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.68), cy + (r * -0.68)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.7), cy + (r * -0.04)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.36), cy + (r * 0.92)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.36), cy + (r * 0.96)));
+                break;
+            case 2:
+                polyShape.addVertex(ofPoint(cx + (r * -0.72), cy + (r * 0.14)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.76), cy + (r * -0.3)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.08), cy + (r * -0.98)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.84), cy + (r * -0.36)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.88), cy + (r * 0.04)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.26), cy + (r * 1)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.1), cy + (r * 1.02)));
+                break;
+        }
+        polyShape.setPhysics(1.0, 0.1, 0.1);
         polyShape.create(world.getWorld());
         
         
@@ -78,7 +97,6 @@ public:
             mesh.clearVertices();
             vector<ofPoint> &pts = polyShape.getPoints();
             ofPoint center       = polyShape.getCentroid2D();
-            cout << "pts"<<pts.size() <<endl;
             for (int i=0; i<pts.size(); i++) {
                 mesh.addVertex(center);
                 mesh.addVertex(pts[i]);
@@ -102,7 +120,11 @@ public:
         ofPopStyle();ofPopMatrix();
         
     }
-    
+    void deletePos(ofVec2f pos){
+        if( (polyShape.getPosition() - pos).length() < radius ){
+            polyShape.destroy();
+        }
+    }
 };
 
 

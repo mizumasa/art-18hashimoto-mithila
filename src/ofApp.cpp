@@ -102,6 +102,7 @@ void testApp::setup() {
     receiver.setup(OSC_PORT_PY2OF);
     sender.setup(OSC_IP, OSC_PORT_OF2PY);
     osc_message = "";
+    b_Edit = false;
 }
 
 //--------------------------------------------------------------
@@ -130,7 +131,7 @@ void testApp::update() {
 
             shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
             p.get()->setTexture(&texturesPoly[textureIdx]);
-            p.get()->setup(box2d,textureIdx, (ofGetWidth()/4)+ofRandom(-20, 20), 300, vi_TexturePolySize[textureIdx]);
+            p.get()->setup(box2d,textureIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), vi_TexturePolySize[textureIdx]);
             particlesPoly.push_back(p);
             
         }
@@ -175,7 +176,6 @@ void testApp::draw() {
 		particles[i].get()->draw();
 	}
     
-    cout << "poly"<<particlesPoly.size()<<endl;
     for (int i=0; i<particlesPoly.size(); i++) {
         particlesPoly[i].get()->draw();
     }
@@ -200,12 +200,15 @@ void testApp::draw() {
     }
     ofPopStyle();ofPopMatrix();
 
-    for (int i=0; i<texturesPoly.size(); i++) {
-        texturesPoly[i].draw(i*100,0,100,100);
+    ofPushMatrix();ofPushStyle();
+    ofSetColor(255, 255, 255);
+    if(b_Edit){
+        for (int i=0; i<texturesPoly.size(); i++) {
+            texturesPoly[i].draw(i*EDIT_SIZE,0,EDIT_SIZE,EDIT_SIZE);
+        }
     }
-    
+    ofPopStyle();ofPopMatrix();
 
-    
     if(b_GrabScreen){
         b_GrabScreen = false;
         imgGrab.grabScreen(drawX, drawY , drawW, drawH);
@@ -234,6 +237,15 @@ void testApp::draw() {
 void testApp::keyPressed(int key) {
     ofxOscMessage m;
     switch(key){
+        case 'e':
+            if(b_Edit){
+                for(int i =0;i<vvf_EditLog.size();i++){
+                    cout <<"polyShape.addVertex(ofPoint(cx + (r * " << vvf_EditLog[i][0] << "), cy + (r * " << vvf_EditLog[i][1] << ")));"<<endl;
+                }
+                vvf_EditLog.clear();
+            }
+            b_Edit = !b_Edit;
+            break;
         case 'o':
             system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
             break;
@@ -300,23 +312,28 @@ void testApp::keyPressed(int key) {
 }
 
 void testApp::avoidRemove(){
-    ofPixels pixels;
-    pixels = grayImage.getPixels();
-    unsigned char *pixelBuf;
-    pixelBuf = pixels.getData();
-    int width,height;
-    width = pixels.getWidth();
-    height = pixels.getHeight();
-    int buf;
-    ofVec2f pos;
-    
-    cout << width <<":"<<height<<":"<< int(pixelBuf[0])<<":"  <<  pixels.getNumChannels() << endl;
-    for(int i=0; i<(width*height); i+=3){
-        buf = int(pixelBuf[i]);
-        if(buf > 100){
-            pos = ofVec2f(drawX + int(i%width) ,drawY + int(i/width));
-            for(int i=0;i<particles.size();i++){
-                particles[i].get()->deletePos(pos);
+    if(grayImage.getWidth() > 0){
+        ofPixels pixels;
+        pixels = grayImage.getPixels();
+        unsigned char *pixelBuf;
+        pixelBuf = pixels.getData();
+        int width,height;
+        width = pixels.getWidth();
+        height = pixels.getHeight();
+        int buf;
+        ofVec2f pos;
+        
+        cout << width <<":"<<height<<":"<< int(pixelBuf[0])<<":"  <<  pixels.getNumChannels() << endl;
+        for(int i=0; i<(width*height); i+=3){
+            buf = int(pixelBuf[i]);
+            if(buf > 100){
+                pos = ofVec2f(drawX + int(i%width) ,drawY + int(i/width));
+                for(int i=0;i<particles.size();i++){
+                    particles[i].get()->deletePos(pos);
+                }
+                for(int i=0;i<particlesPoly.size();i++){
+                    particlesPoly[i].get()->deletePos(pos);
+                }
             }
         }
     }
@@ -337,38 +354,47 @@ void testApp::mousePressed(int x, int y, int button) {
 	p.get()->setupTheCustomData();
 	particles.push_back(p);
 */
-    ofVec2f pos = ofVec2f(x,y);
-    for(int i=0;i<particles.size();i++){
-        particles[i].get()->deletePos(pos);
+    if(b_Edit){
+        cout << (x % EDIT_SIZE) * 2.0/ EDIT_SIZE - 1.0 << "," << y * 2.0/EDIT_SIZE - 1.0<<endl;
+        vvf_EditLog.push_back(ofVec2f((x % EDIT_SIZE) * 2.0/ EDIT_SIZE - 1.0, y * 2.0/EDIT_SIZE - 1.0));
+    }else{
+        ofVec2f pos = ofVec2f(x,y);
+        for(int i=0;i<particles.size();i++){
+            particles[i].get()->deletePos(pos);
+        }
+        for(int i=0;i<particlesPoly.size();i++){
+            particlesPoly[i].get()->deletePos(pos);
+        }
+        
+        lines.push_back(ofPolyline());
+        lines.back().addVertex(x, y);
     }
-
-    
-    lines.push_back(ofPolyline());
-    lines.back().addVertex(x, y);
-
 }
 
 
 //--------------------------------------------------------------
 void testApp::mouseDragged(int x, int y, int button) {
-    lines.back().addVertex(x, y);
+    if(!b_Edit){
+        lines.back().addVertex(x, y);
+    }
 }
 
 //--------------------------------------------------------------
 void testApp::mouseReleased(int x, int y, int button) {
-    
-    shared_ptr <ofxBox2dEdge> edge = shared_ptr<ofxBox2dEdge>(new ofxBox2dEdge);
-    lines.back().simplify();
-    
-    for (int i=0; i<lines.back().size(); i++) {
-        edge.get()->addVertex(lines.back()[i]);
+    if(!b_Edit){
+        shared_ptr <ofxBox2dEdge> edge = shared_ptr<ofxBox2dEdge>(new ofxBox2dEdge);
+        lines.back().simplify();
+        
+        for (int i=0; i<lines.back().size(); i++) {
+            edge.get()->addVertex(lines.back()[i]);
+        }
+        
+        //poly.setPhysics(1, .2, 1);  // uncomment this to see it fall!
+        edge.get()->create(box2d.getWorld());
+        edges.push_back(edge);
+        
+        //lines.clear();
     }
-    
-    //poly.setPhysics(1, .2, 1);  // uncomment this to see it fall!
-    edge.get()->create(box2d.getWorld());
-    edges.push_back(edge);
-    
-    //lines.clear();
 }
 
 //--------------------------------------------------------------
