@@ -96,7 +96,12 @@ public:
 	
 	ofxBox2d                            box2d;
 	vector <shared_ptr<CustomParticle> >		particles;
-	
+    
+    vector <ofImage> texturesPoly;
+    vector <shared_ptr<TextureShape> > particlesPoly;
+
+    
+    
     vector <ofPolyline>                 lines;
     vector <shared_ptr<ofxBox2dEdge> >  edges;
     bool                                b_Auto;
@@ -107,6 +112,7 @@ public:
 
     vector <ofImage> textures;
     vector <int> vi_TextureSize;
+    vector <int> vi_TexturePolySize;
     
     int fullWidth;
     int fullHeight;

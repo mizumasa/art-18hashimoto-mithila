@@ -29,13 +29,24 @@ void testApp::setup() {
     for (int i=0; i<n; i++) {
         textures.push_back(ofImage(dir.getPath(i)));
     }
-    printf("%i Textures Loaded\n", (int)textures.size());
 
     for (int i=0; i<n; i++) {
         vi_TextureSize.push_back(ofRandom(20, 60));
     }
     
+    ofDirectory dir2;
+    int n2 = dir2.listDir("texturesPoly");
+    for (int i=0; i<n2; i++) {
+        texturesPoly.push_back(ofImage(dir2.getPath(i)));
+    }
+
+    for (int i=0; i<n2; i++) {
+        vi_TexturePolySize.push_back(ofRandom(20, 60));
+    }
     
+    printf("%i Textures Loaded\n", (int)textures.size());
+    printf("%i TexturesPoly Loaded\n", (int)texturesPoly.size());
+
 #ifdef _USE_LIVE_VIDEO
 #ifdef _USE_BLACKMAGIC
     cam.setup(BLACKMAGIC_W, BLACKMAGIC_H, BLACKMAGIC_FPS);
@@ -113,6 +124,16 @@ void testApp::update() {
             p.get()->setTexture(&textures[textureIdx]);
             particles.push_back(p);
         }
+        
+        for(int i=0;i<2;i++){
+            int textureIdx = (int)ofRandom(texturesPoly.size());
+
+            shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
+            p.get()->setTexture(&texturesPoly[textureIdx]);
+            p.get()->setup(box2d,textureIdx, (ofGetWidth()/4)+ofRandom(-20, 20), 300, vi_TexturePolySize[textureIdx]);
+            particlesPoly.push_back(p);
+            
+        }
     }
     
     if(b_Captured){
@@ -154,6 +175,11 @@ void testApp::draw() {
 		particles[i].get()->draw();
 	}
     
+    cout << "poly"<<particlesPoly.size()<<endl;
+    for (int i=0; i<particlesPoly.size(); i++) {
+        particlesPoly[i].get()->draw();
+    }
+    
     ofSetHexColor(0x444342);
     ofNoFill();
     for (int i=0; i<lines.size(); i++) {
@@ -173,7 +199,13 @@ void testApp::draw() {
         ofDrawRectangle(0, drawY+drawH, ofGetWidth() / 2, drawY);
     }
     ofPopStyle();ofPopMatrix();
-	
+
+    for (int i=0; i<texturesPoly.size(); i++) {
+        texturesPoly[i].draw(i*100,0,100,100);
+    }
+    
+
+    
     if(b_GrabScreen){
         b_GrabScreen = false;
         imgGrab.grabScreen(drawX, drawY , drawW, drawH);
@@ -235,6 +267,9 @@ void testApp::keyPressed(int key) {
             b_Debug = !b_Debug;
             for(int i=0; i<particles.size(); i++) {
                 particles[i]->b_Debug = b_Debug;
+            }
+            for(int i=0; i<particlesPoly.size(); i++) {
+                particlesPoly[i]->b_Debug = b_Debug;
             }
             break;
         case 'r':
