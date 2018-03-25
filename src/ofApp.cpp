@@ -2,6 +2,7 @@
 
 //--------------------------------------------------------------
 void testApp::setup() {
+    system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
 	//ofBackgroundHex(0xfdefc2);
     ofBackgroundHex(0xffffff);
     ofSetLogLevel(OF_LOG_NOTICE);
@@ -81,10 +82,15 @@ void testApp::setup() {
     b_Auto = true;
     b_Debug = false;
     b_GrabScreen = false;
+    b_Captured = false;
     
     setupSequence();
 
     avoidImage.load("sampleShadow.png");
+    
+    receiver.setup(OSC_PORT_PY2OF);
+    sender.setup(OSC_IP, OSC_PORT_OF2PY);
+    osc_message = "";
 }
 
 //--------------------------------------------------------------
@@ -92,6 +98,7 @@ void testApp::update() {
     sequence.update();
     updateSequence();
     updateCam();
+    updateOSC();
     
 	box2d.update();
     
@@ -107,7 +114,16 @@ void testApp::update() {
             particles.push_back(p);
         }
     }
-    particles[0]->update();
+    
+    if(b_Captured){
+        b_Captured = false;
+        ofxOscMessage m;
+        m.setAddress( "/image/saved" );
+        m.addStringArg(filenameCapture);
+        sender.sendMessage( m );
+    }
+    
+    //particles[0]->update();
     
     /*for(int i=0;i<particles.size();i++){
         particles[i].get()->setRadius(MIN(100, particles[i].get()->getRadius()+1));
@@ -147,22 +163,60 @@ void testApp::draw() {
         edges[i].get()->draw();
     }
 	
-	string info = "FPS: "+ofToString(ofGetFrameRate(), 1);
-	info += "\nClick to add particles\nThe letters and color are from the custom data.";
-	ofSetHexColor(0x444342);
-	ofDrawBitmapString(info, 20, 20);
-    
+    ofPushMatrix();ofPushStyle();
+    {
+        ofFill();
+        ofSetColor(255, 255, 255);
+        ofDrawRectangle(0, 0, drawX, ofGetHeight());
+        ofDrawRectangle(0, 0, ofGetWidth() / 2, drawY);
+        ofDrawRectangle(drawX+drawW, 0, drawX, ofGetHeight());
+        ofDrawRectangle(0, drawY+drawH, ofGetWidth() / 2, drawY);
+    }
+    ofPopStyle();ofPopMatrix();
+	
     if(b_GrabScreen){
         b_GrabScreen = false;
         imgGrab.grabScreen(drawX, drawY , drawW, drawH);
-        imgGrab.save("screenshot.png");
+        int mn = ofGetMonth();
+        int d = ofGetDay();
+        int s = ofGetSeconds();
+        int m = ofGetMinutes();
+        int h = ofGetHours();
+        string filename = "capture/screenshot_" + ofToString(mn, 0) + "_" + ofToString(d, 0) + "_" + ofToString(h, 0) + "_" + ofToString(m, 0) + "_" + ofToString(s, 0) +".png";
+        imgGrab.save(filename);
+        filenameCapture = filename;
+        b_Captured = true;
+    }
+    
+    if(b_Debug){
+        string info = "FPS: "+ofToString(ofGetFrameRate(), 1);
+        info += "\n";
+        info += osc_message;
+        ofSetHexColor(0x444342);
+        ofDrawBitmapString(info, 20, 20);
     }
 }
 
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key) {
+    ofxOscMessage m;
     switch(key){
+        case 'o':
+            system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
+            break;
+        case 't':
+            m.setAddress( "/image/saved" );
+            m.addStringArg("test/test.png");
+            sender.sendMessage( m );
+            break;
+        case 'k':
+            m.setAddress( "/kill" );
+            sender.sendMessage( m );
+            break;
+        case 'a':
+            avoidRemove();
+            break;
         case 'c':
             lines.clear();
             edges.clear();
@@ -207,6 +261,29 @@ void testApp::keyPressed(int key) {
             }
             
             break;
+    }
+}
+
+void testApp::avoidRemove(){
+    ofPixels pixels;
+    pixels = grayImage.getPixels();
+    unsigned char *pixelBuf;
+    pixelBuf = pixels.getData();
+    int width,height;
+    width = pixels.getWidth();
+    height = pixels.getHeight();
+    int buf;
+    ofVec2f pos;
+    
+    cout << width <<":"<<height<<":"<< int(pixelBuf[0])<<":"  <<  pixels.getNumChannels() << endl;
+    for(int i=0; i<(width*height); i+=3){
+        buf = int(pixelBuf[i]);
+        if(buf > 100){
+            pos = ofVec2f(drawX + int(i%width) ,drawY + int(i/width));
+            for(int i=0;i<particles.size();i++){
+                particles[i].get()->deletePos(pos);
+            }
+        }
     }
 }
 
@@ -318,6 +395,27 @@ void testApp::updateSequence(){
     }
 }
 
+void testApp::updateOSC(){
+    //現在順番待ちのOSCメッセージがあるか確認
+    while( receiver.hasWaitingMessages() )
+    {
+        ofxOscMessage m;
+        receiver.getNextMessage( &m );
+        
+        if ( m.getAddress() == "/image/uploaded" ){
+            string str;
+            str = m.getArgAsString( 0 );
+            cout <<"[OSC] got QR code path" << str <<endl;
+            osc_message = "[OSC] got QR code path" + str;
+        }
+        if ( m.getAddress() == "/status" ){
+            string str;
+            str = m.getArgAsString( 0 );
+            cout <<"[OSC]" << str <<endl;
+            osc_message = "[OSC] status" + str;
+        }
+    }
+}
 
 void testApp::updateCam(){
 #ifdef _USE_LIVE_VIDEO
@@ -388,4 +486,11 @@ void testApp::updateCam(){
         }*/
     }
 #endif
+}
+
+void testApp::exit(){
+    cout << "finish app" << endl;
+    ofxOscMessage m;
+    m.setAddress( "/kill" );
+    sender.sendMessage( m );
 }

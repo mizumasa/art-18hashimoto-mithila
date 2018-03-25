@@ -31,6 +31,10 @@
 #define CANVAS_W 810
 #define CANVAS_H 1080
 
+#define OSC_IP "localhost"
+#define OSC_PORT_OF2PY 7110
+#define OSC_PORT_PY2OF 7111
+
 class RateTimer {
 protected:
     float lastTick, averagePeriod, smoothing;
@@ -77,7 +81,11 @@ public:
 	void update();
     void updateCam();
     void updateSequence();
+    void updateOSC();
 	void draw();
+    void exit();
+    
+    void avoidRemove();
 	
 	void keyPressed  (int key);
 	void mouseMoved(int x, int y );
@@ -125,8 +133,6 @@ public:
     ofImage cropCam;
     ofImage imgGrab;
     bool b_GrabScreen;
-    //ofxCvColorImage         colorImg;
-    //ofxCvGrayscaleImage     grayImage;
     int drawW,drawH,drawX,drawY;
     
     ofImage avoidImage;
@@ -136,4 +142,13 @@ public:
     //ofxCvGrayscaleImage grayBg;
     //ofxCvGrayscaleImage grayDiff;
     ofxCvContourFinder contourFinder;
+    
+    bool b_Captured;
+    
+    ofxOscSender sender;
+    ofxOscReceiver receiver;
+    string osc_message;
+    
+    string filenameCapture;
+    string filenameQR;
 };
