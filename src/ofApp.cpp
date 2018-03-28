@@ -1,5 +1,23 @@
 #include "ofApp.h"
 
+int TEXTURE_SIZE[3][3] = {
+    {40,45,0},
+    {40,45,0},
+    {55,60,1}
+};
+#define TEXTURE_RAND_SIZE 7
+int TEXTURE_RAND[TEXTURE_RAND_SIZE] = {0,0,0,1,1,1,2};
+
+int TEXTURE_POLY_SIZE[3][3] = {
+    {30,35,1},
+    {40,45,1},
+    {30,35,1}
+};
+#define TEXTURE_POLY_RAND_SIZE 5
+int TEXTURE_POLY_RAND[TEXTURE_POLY_RAND_SIZE] = {0,0,1,1,2};
+
+
+
 //--------------------------------------------------------------
 void testApp::setup() {
     system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
@@ -91,6 +109,7 @@ void testApp::setup() {
     
     
     b_Auto = true;
+    b_AutoBorn = true;
     b_Debug = false;
     b_GrabScreen = false;
     b_Captured = false;
@@ -98,11 +117,17 @@ void testApp::setup() {
     setupSequence();
 
     avoidImage.load("sampleShadow.png");
-    
+    avoidImageOri.load("sampleShadowOri.png");
+
     receiver.setup(OSC_PORT_PY2OF);
     sender.setup(OSC_IP, OSC_PORT_OF2PY);
     osc_message = "";
     b_Edit = false;
+    
+    i_DestroyCheckCount = 0;
+    i_DestroyCheckCountPoly = 0;
+    i_CheckCount = 0;
+    i_CheckCountPoly = 0;
 }
 
 //--------------------------------------------------------------
@@ -114,28 +139,137 @@ void testApp::update() {
     
 	box2d.update();
     
-    if(b_Auto){
+    
+    if(b_AutoBorn){
         for(int i=0;i<10;i++){
-            int textureIdx = (int)ofRandom(textures.size());
+            int textureIdx = TEXTURE_RAND[ (int)ofRandom(TEXTURE_RAND_SIZE)];
             shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
-            p.get()->setPhysics(1.0, 0, 0);
-            p.get()->setup(box2d.getWorld(),  fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), vi_TextureSize[textureIdx]);
+            p.get()->setPhysics(1.0 / TEXTURE_SIZE[textureIdx][0], 0, 0);
+            p.get()->setup(box2d.getWorld(),  fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), ofRandom(TEXTURE_SIZE[textureIdx][0], TEXTURE_SIZE[textureIdx][1]) );
             p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
             p.get()->setupTheCustomData();
             p.get()->setTexture(&textures[textureIdx]);
+            p.get()->setTextureId(textureIdx);
             particles.push_back(p);
         }
         
-        for(int i=0;i<2;i++){
+        for(int i=0;i<10;i++){
             int textureIdx = (int)ofRandom(texturesPoly.size());
-
+            
             shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
             p.get()->setTexture(&texturesPoly[textureIdx]);
-            p.get()->setup(box2d,textureIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), vi_TexturePolySize[textureIdx]);
+            p.get()->setup(box2d,textureIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), ofRandom(TEXTURE_POLY_SIZE[textureIdx][0], TEXTURE_POLY_SIZE[textureIdx][1]));
+            p.get()->setTextureId(textureIdx);
             particlesPoly.push_back(p);
             
         }
     }
+    if(b_Auto){
+        int particlesNum = particles.size();
+        int particlesNumPoly = particlesPoly.size();
+        int checkIdx1,checkIdx2;
+        ofVec2f checkPos1, checkPos2;
+        float posDist;
+
+        if(particlesNum > 4){
+            for(int i = 0;i<CHECK_NUM_PER_FRAME;i++){
+                checkIdx1 = i_CheckCount;
+                checkIdx2 = (int)ofRandom(particlesNum-1) + 1;
+                checkIdx2 = (checkIdx1 + checkIdx2) % particlesNum;
+                if(particles[checkIdx1].get()->getTextureId() == particles[checkIdx2].get()->getTextureId() and
+                   (TEXTURE_SIZE[particles[checkIdx1].get()->getTextureId()][2] == 1)){
+                    checkPos1 = particles[checkIdx1].get()->getPosition();
+                    checkPos2 = particles[checkIdx2].get()->getPosition();
+                    posDist = (checkPos1 - checkPos2).length();
+                    if (posDist > 65 and posDist < 150){
+                        
+                        particles[checkIdx1].get()->destroy();
+                        particles[checkIdx1] = particles.back();
+                        particles.pop_back();
+                        
+                        if(0){
+                        ofVec2f newPos = (checkPos1 + checkPos2) / 2;
+                        if(ofRandomf() >= 0.5){
+                            int newId = (particles[checkIdx1].get()->getTextureId() + (int)ofRandom(textures.size() - 1) + 1) % textures.size();
+
+                            shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
+                            p.get()->setPhysics(1.0 / TEXTURE_SIZE[newId][0], 0, 0);
+                            p.get()->setup(box2d.getWorld(),  newPos[0], newPos[1], ofRandom(TEXTURE_SIZE[newId][0], TEXTURE_SIZE[newId][1]));
+                            p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
+                            p.get()->setupTheCustomData();
+                            p.get()->setTexture(&textures[newId]);
+                            p.get()->setTextureId(newId);
+                            particles.push_back(p);
+
+                        }else{
+                            int newId = (int)ofRandom(texturesPoly.size());
+                            
+                            shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
+                            p.get()->setTexture(&texturesPoly[newId]);
+                            p.get()->setup(box2d,newId, newPos[0], newPos[1], ofRandom(TEXTURE_POLY_SIZE[newId][0], TEXTURE_POLY_SIZE[newId][1]));
+                            p.get()->setTextureId(newId);
+                            particlesPoly.push_back(p);
+
+                        }
+                        }
+                    }
+                }
+                i_CheckCount = (i_CheckCount + 1) % particles.size();
+            }
+        }
+        if(particlesNumPoly > 4){
+            for(int i = 0;i<CHECK_NUM_PER_FRAME;i++){
+                checkIdx1 = i_CheckCountPoly;
+                checkIdx2 = (int)ofRandom(particlesNumPoly-1)+1;
+                checkIdx2 = (checkIdx1 + checkIdx2) % particlesNumPoly;
+                if(particlesPoly[checkIdx1].get()->getTextureId() == particlesPoly[checkIdx2].get()->getTextureId()  and
+                   (TEXTURE_POLY_SIZE[particlesPoly[checkIdx1].get()->getTextureId()][2] == 1)){
+                    checkPos1 = particlesPoly[checkIdx1].get()->polyShape.getPosition();
+                    checkPos2 = particlesPoly[checkIdx2].get()->polyShape.getPosition();
+                    posDist = (checkPos1 - checkPos2).length();
+                    if (posDist > 65 and posDist < 150){
+                        
+                        particlesPoly[checkIdx2].get()->polyShape.destroy();
+                        particlesPoly[checkIdx2] = particlesPoly.back();
+                        particlesPoly.pop_back();
+                        
+                        if(0){
+                        ofVec2f newPos = (checkPos1 + checkPos2) / 2;
+                        if(ofRandomf() > 0.5){
+                            int newId = (particlesPoly[checkIdx1].get()->getTextureId() + (int)ofRandom(texturesPoly.size() - 1) + 1) % texturesPoly.size();
+                            
+                            shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
+                            p.get()->setTexture(&texturesPoly[newId]);
+                            p.get()->setup(box2d,newId, newPos[0], newPos[1], ofRandom(TEXTURE_POLY_SIZE[newId][0], TEXTURE_POLY_SIZE[newId][1]));
+                            p.get()->setTextureId(newId);
+                            particlesPoly.push_back(p);
+
+                        }else{
+                            //int newId = (int)ofRandom(textures.size());
+                            int newId = TEXTURE_RAND[ (int)ofRandom(TEXTURE_RAND_SIZE)];
+
+                            
+                            shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
+                            p.get()->setPhysics(1.0 / TEXTURE_SIZE[newId][0], 0, 0);
+                            p.get()->setup(box2d.getWorld(),  newPos[0], newPos[1], ofRandom(TEXTURE_SIZE[newId][0], TEXTURE_SIZE[newId][1]));
+                            p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
+                            p.get()->setupTheCustomData();
+                            p.get()->setTexture(&textures[newId]);
+                            p.get()->setTextureId(newId);
+                            particles.push_back(p);
+                        }
+                        }
+                    }
+                }
+                i_CheckCountPoly = (i_CheckCountPoly + 1) % particlesPoly.size();
+
+            }
+            
+            
+        }
+
+    }
+    
     
     if(b_Captured){
         b_Captured = false;
@@ -150,6 +284,29 @@ void testApp::update() {
     /*for(int i=0;i<particles.size();i++){
         particles[i].get()->setRadius(MIN(100, particles[i].get()->getRadius()+1));
     }*/
+    ofVec2f nowPos;
+    
+
+    
+    nowPos = particles[i_DestroyCheckCount].get()->getPosition();
+    //if((nowPos[0] < drawX) or (nowPos[0] > (drawX + drawW)) or (nowPos[1] < drawY) or (nowPos[1] > (drawY + drawH)) ){
+    if((nowPos[0] < 0) or (nowPos[0] > (drawX*2 + drawW)) or (nowPos[1] < 0) or (nowPos[1] > (drawY*2 + drawH)) ){
+        particles[i_DestroyCheckCount].get()->destroy();
+        particles[i_DestroyCheckCount] = particles.back();
+        particles.pop_back();
+    }
+    
+    nowPos = particlesPoly[i_DestroyCheckCountPoly].get()->polyShape.getPosition();
+    //if((nowPos[0] < drawX) or (nowPos[0] > (drawX + drawW)) or (nowPos[1] < drawY) or (nowPos[1] > (drawY + drawH)) ){
+    if((nowPos[0] < 0) or (nowPos[0] > (drawX*2 + drawW)) or (nowPos[1] < 0) or (nowPos[1] > (drawY*2 + drawH)) ){
+        particlesPoly[i_DestroyCheckCountPoly].get()->polyShape.destroy();
+        particlesPoly[i_DestroyCheckCountPoly] = particlesPoly.back();
+        particlesPoly.pop_back();
+    }
+    i_DestroyCheckCount = (i_DestroyCheckCount + 1) % particles.size();
+    i_DestroyCheckCountPoly = (i_DestroyCheckCountPoly + 1) % particlesPoly.size();
+
+    
 }
 
 
@@ -167,7 +324,8 @@ void testApp::draw() {
     drawX = ofGetWidth()/2 * 0.1;
     drawY = (ofGetHeight() - drawH)/2;
     inputCam.draw(drawX, drawY, drawW, drawH);
-    avoidImage.draw(drawX, drawY, drawW, drawH);
+    
+    avoidImageOri.draw(drawX, drawY, drawW, drawH);
     
     contourFinder.draw(drawX,drawY);
 
@@ -272,8 +430,11 @@ void testApp::keyPressed(int key) {
         case 's':
             b_GrabScreen = true;
             break;
-        case ' ':
+        case OF_KEY_RETURN:
             b_Auto = !b_Auto;
+            break;
+        case ' ':
+            b_AutoBorn = !b_AutoBorn;
             break;
         case 'd':
             b_Debug = !b_Debug;

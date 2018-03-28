@@ -9,17 +9,27 @@
 #include "ofMain.h"
 #include "ofxBox2d.h"
 
+#define DRAW_SCALE 0.9
+
 class CustomParticle : public ofxBox2dCircle {
     
 private:
     vector<ofVec2f> vvf_Vel;
     ofImage    *    texturePtr;
+    int             textureId;
     
 public:
     bool b_Debug;
     void setupTheCustomData();
     void update();
     void setTexture(ofImage * texture);
+    void setTextureId(int textureId_){
+        textureId = textureId_;
+    }
+    int getTextureId(){
+        return textureId;
+    }
+
     void draw();
     void deletePos(ofVec2f pos);
 };
@@ -30,6 +40,8 @@ public:
 static int hexColors[4] = {0x31988A, 0xFDB978, 0xFF8340, 0xE8491B};
 
 class TextureShape {
+private:
+    int             textureId;
 public:
     ofImage    *    texturePtr;
     ofMesh          mesh;
@@ -79,7 +91,7 @@ public:
                 polyShape.addVertex(ofPoint(cx + (r * -0.1), cy + (r * 1.02)));
                 break;
         }
-        polyShape.setPhysics(1.0, 0.1, 0.1);
+        polyShape.setPhysics(1.0 / radius , 0.1, 0.1);
         polyShape.create(world.getWorld());
         
         
@@ -89,6 +101,13 @@ public:
         //texturePtr->getTextureReference().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
         //texturePtr->getTextureReference().setTextureWrap(GL_REPEAT, GL_REPEAT);
     }
+    void setTextureId(int textureId_){
+        textureId = textureId_;
+    }
+    int getTextureId(){
+        return textureId;
+    }
+
     void draw() {
         
         ofPushMatrix();ofPushStyle();
@@ -115,7 +134,7 @@ public:
             ofRotateZ(polyShape.getRotation());
             ofSetColor(255,255,255);
             ofFill();
-            texturePtr->draw(-radius, -radius, radius*2,radius*2);
+            texturePtr->draw(-radius * DRAW_SCALE, -radius * DRAW_SCALE, radius*2 * DRAW_SCALE,radius*2 * DRAW_SCALE);
         }
         ofPopStyle();ofPopMatrix();
         

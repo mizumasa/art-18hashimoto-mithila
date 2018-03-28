@@ -12,6 +12,7 @@ public:
     int     size;
 };
 
+int COLORS_LIST[] = {0xcae72b, 0xe63b8f, 0x2bb0e7};
 
 void CustomParticle::setupTheCustomData() {
     
@@ -26,7 +27,7 @@ void CustomParticle::setupTheCustomData() {
     
     theData->id = ofRandom(0, 100);
     theData->name += abc[(int)ofRandom(0, abc.size())];
-    theData->color.setHex(colors[(int)ofRandom(0, 3)]);
+    theData->color.setHex(colors[0]);
     theData->iconId = ofRandom(0, 6);
     
     b_Debug = false;
@@ -63,11 +64,11 @@ void CustomParticle::draw() {
         
         
         if(b_Debug){
-            ofSetColor(theData->color);
+            ofSetHexColor(COLORS_LIST[textureId]);
             ofFill();
             ofCircle(0, 0, radius);
         }else{
-            texturePtr->draw(-radius*0.9, -radius*0.9, radius*2*0.9,radius*2*0.9);
+            texturePtr->draw(-radius*DRAW_SCALE, -radius*DRAW_SCALE, radius*2*DRAW_SCALE,radius*2*DRAW_SCALE);
         }
         
         /*float textSize = radius/10;

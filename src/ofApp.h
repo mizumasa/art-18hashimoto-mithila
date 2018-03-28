@@ -37,6 +37,10 @@
 
 #define EDIT_SIZE 100
 
+#define CHECK_NUM_PER_FRAME 300 
+
+
+
 class RateTimer {
 protected:
     float lastTick, averagePeriod, smoothing;
@@ -107,6 +111,7 @@ public:
     vector <ofPolyline>                 lines;
     vector <shared_ptr<ofxBox2dEdge> >  edges;
     bool                                b_Auto;
+    bool                                b_AutoBorn;
     bool                                b_Debug;
     bool                                b_Edit;
     vector<ofVec2f> vvf_EditLog;
@@ -146,6 +151,7 @@ public:
     int drawW,drawH,drawX,drawY;
     
     ofImage avoidImage;
+    ofImage avoidImageOri;
     
     ofxCvColorImage colorImg;
     ofxCvGrayscaleImage grayImage;
@@ -161,4 +167,9 @@ public:
     
     string filenameCapture;
     string filenameQR;
+    
+    int i_DestroyCheckCount;
+    int i_DestroyCheckCountPoly;
+    int i_CheckCount;
+    int i_CheckCountPoly;
 };
