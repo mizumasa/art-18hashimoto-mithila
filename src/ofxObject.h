@@ -111,7 +111,6 @@ public:
     void draw() {
         
         ofPushMatrix();ofPushStyle();
-        
         if(b_Debug){
             mesh.clearVertices();
             vector<ofPoint> &pts = polyShape.getPoints();

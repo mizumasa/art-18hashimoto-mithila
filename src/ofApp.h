@@ -102,9 +102,11 @@ public:
 	
 	ofxBox2d                            box2d;
 	vector <shared_ptr<CustomParticle> >		particles;
-    
+    vector< vector <shared_ptr<CustomParticle> >>        v_particles;
+
     vector <ofImage> texturesPoly;
     vector <shared_ptr<TextureShape> > particlesPoly;
+    vector< vector <shared_ptr<TextureShape> >> v_particlesPoly;
 
     
     
@@ -170,6 +172,8 @@ public:
     
     int i_DestroyCheckCount;
     int i_DestroyCheckCountPoly;
+    int i_DestroyCheckCountId;
+    int i_DestroyCheckCountPolyId;
     int i_CheckCount;
     int i_CheckCountPoly;
 };

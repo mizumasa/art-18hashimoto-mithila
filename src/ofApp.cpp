@@ -46,6 +46,9 @@ void testApp::setup() {
     int n = dir.listDir("textures");
     for (int i=0; i<n; i++) {
         textures.push_back(ofImage(dir.getPath(i)));
+        
+        vector <shared_ptr<CustomParticle> >        particlesBuf;
+        v_particles.push_back(particlesBuf);
     }
 
     for (int i=0; i<n; i++) {
@@ -56,6 +59,9 @@ void testApp::setup() {
     int n2 = dir2.listDir("texturesPoly");
     for (int i=0; i<n2; i++) {
         texturesPoly.push_back(ofImage(dir2.getPath(i)));
+        
+        vector <shared_ptr<TextureShape> > particlesPolyBuf;
+        v_particlesPoly.push_back(particlesPolyBuf);
     }
 
     for (int i=0; i<n2; i++) {
@@ -126,6 +132,8 @@ void testApp::setup() {
     
     i_DestroyCheckCount = 0;
     i_DestroyCheckCountPoly = 0;
+    i_DestroyCheckCountId = 0;
+    i_DestroyCheckCountPolyId = 0;
     i_CheckCount = 0;
     i_CheckCountPoly = 0;
 }
@@ -150,124 +158,69 @@ void testApp::update() {
             p.get()->setupTheCustomData();
             p.get()->setTexture(&textures[textureIdx]);
             p.get()->setTextureId(textureIdx);
-            particles.push_back(p);
+            //particles.push_back(p);
+            v_particles[textureIdx].push_back(p);
         }
         
         for(int i=0;i<10;i++){
             int textureIdx = (int)ofRandom(texturesPoly.size());
             
             shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
-            p.get()->setTexture(&texturesPoly[textureIdx]);
             p.get()->setup(box2d,textureIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), ofRandom(TEXTURE_POLY_SIZE[textureIdx][0], TEXTURE_POLY_SIZE[textureIdx][1]));
+            p.get()->setTexture(&texturesPoly[textureIdx]);
             p.get()->setTextureId(textureIdx);
-            particlesPoly.push_back(p);
-            
+            //particlesPoly.push_back(p);
+            v_particlesPoly[textureIdx].push_back(p);
         }
     }
     if(b_Auto){
-        int particlesNum = particles.size();
-        int particlesNumPoly = particlesPoly.size();
-        int checkIdx1,checkIdx2;
         ofVec2f checkPos1, checkPos2;
         float posDist;
-
-        if(particlesNum > 4){
-            for(int i = 0;i<CHECK_NUM_PER_FRAME;i++){
-                checkIdx1 = i_CheckCount;
-                checkIdx2 = (int)ofRandom(particlesNum-1) + 1;
-                checkIdx2 = (checkIdx1 + checkIdx2) % particlesNum;
-                if(particles[checkIdx1].get()->getTextureId() == particles[checkIdx2].get()->getTextureId() and
-                   (TEXTURE_SIZE[particles[checkIdx1].get()->getTextureId()][2] == 1)){
-                    checkPos1 = particles[checkIdx1].get()->getPosition();
-                    checkPos2 = particles[checkIdx2].get()->getPosition();
-                    posDist = (checkPos1 - checkPos2).length();
-                    if (posDist > 65 and posDist < 150){
-                        
-                        particles[checkIdx1].get()->destroy();
-                        particles[checkIdx1] = particles.back();
-                        particles.pop_back();
-                        
-                        if(0){
-                        ofVec2f newPos = (checkPos1 + checkPos2) / 2;
-                        if(ofRandomf() >= 0.5){
-                            int newId = (particles[checkIdx1].get()->getTextureId() + (int)ofRandom(textures.size() - 1) + 1) % textures.size();
-
-                            shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
-                            p.get()->setPhysics(1.0 / TEXTURE_SIZE[newId][0], 0, 0);
-                            p.get()->setup(box2d.getWorld(),  newPos[0], newPos[1], ofRandom(TEXTURE_SIZE[newId][0], TEXTURE_SIZE[newId][1]));
-                            p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
-                            p.get()->setupTheCustomData();
-                            p.get()->setTexture(&textures[newId]);
-                            p.get()->setTextureId(newId);
-                            particles.push_back(p);
-
-                        }else{
-                            int newId = (int)ofRandom(texturesPoly.size());
-                            
-                            shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
-                            p.get()->setTexture(&texturesPoly[newId]);
-                            p.get()->setup(box2d,newId, newPos[0], newPos[1], ofRandom(TEXTURE_POLY_SIZE[newId][0], TEXTURE_POLY_SIZE[newId][1]));
-                            p.get()->setTextureId(newId);
-                            particlesPoly.push_back(p);
-
-                        }
+        for(int i = 0;i < v_particles.size();i++){
+            cout << v_particles[i].size() << ":";
+            if(TEXTURE_SIZE[i][2] == 1){
+                int particlesNum = v_particles[i].size();
+                if(particlesNum > 3){
+                for(int j = 0;j< (particlesNum-1) ; j++){
+                    for(int k = (j+1);k<particlesNum ; k++){
+                        checkPos1 = v_particles[i][j].get()->getPosition();
+                        checkPos2 = v_particles[i][k].get()->getPosition();
+                        posDist = (checkPos1 - checkPos2).length();
+                        if (posDist > 65 and posDist < 150){
+                            v_particles[i][k].get()->destroy();
+                            v_particles[i][k] = v_particles[i].back();
+                            v_particles[i].pop_back();
+                            particlesNum -= 1;
                         }
                     }
                 }
-                i_CheckCount = (i_CheckCount + 1) % particles.size();
+                }
             }
         }
-        if(particlesNumPoly > 4){
-            for(int i = 0;i<CHECK_NUM_PER_FRAME;i++){
-                checkIdx1 = i_CheckCountPoly;
-                checkIdx2 = (int)ofRandom(particlesNumPoly-1)+1;
-                checkIdx2 = (checkIdx1 + checkIdx2) % particlesNumPoly;
-                if(particlesPoly[checkIdx1].get()->getTextureId() == particlesPoly[checkIdx2].get()->getTextureId()  and
-                   (TEXTURE_POLY_SIZE[particlesPoly[checkIdx1].get()->getTextureId()][2] == 1)){
-                    checkPos1 = particlesPoly[checkIdx1].get()->polyShape.getPosition();
-                    checkPos2 = particlesPoly[checkIdx2].get()->polyShape.getPosition();
-                    posDist = (checkPos1 - checkPos2).length();
-                    if (posDist > 65 and posDist < 150){
-                        
-                        particlesPoly[checkIdx2].get()->polyShape.destroy();
-                        particlesPoly[checkIdx2] = particlesPoly.back();
-                        particlesPoly.pop_back();
-                        
-                        if(0){
-                        ofVec2f newPos = (checkPos1 + checkPos2) / 2;
-                        if(ofRandomf() > 0.5){
-                            int newId = (particlesPoly[checkIdx1].get()->getTextureId() + (int)ofRandom(texturesPoly.size() - 1) + 1) % texturesPoly.size();
-                            
-                            shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
-                            p.get()->setTexture(&texturesPoly[newId]);
-                            p.get()->setup(box2d,newId, newPos[0], newPos[1], ofRandom(TEXTURE_POLY_SIZE[newId][0], TEXTURE_POLY_SIZE[newId][1]));
-                            p.get()->setTextureId(newId);
-                            particlesPoly.push_back(p);
-
-                        }else{
-                            //int newId = (int)ofRandom(textures.size());
-                            int newId = TEXTURE_RAND[ (int)ofRandom(TEXTURE_RAND_SIZE)];
-
-                            
-                            shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
-                            p.get()->setPhysics(1.0 / TEXTURE_SIZE[newId][0], 0, 0);
-                            p.get()->setup(box2d.getWorld(),  newPos[0], newPos[1], ofRandom(TEXTURE_SIZE[newId][0], TEXTURE_SIZE[newId][1]));
-                            p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
-                            p.get()->setupTheCustomData();
-                            p.get()->setTexture(&textures[newId]);
-                            p.get()->setTextureId(newId);
-                            particles.push_back(p);
-                        }
+        
+        
+        for(int i = 0;i < v_particlesPoly.size();i++){
+            cout << v_particlesPoly[i].size()<< ":";
+            if(TEXTURE_POLY_SIZE[i][2] == 1){
+                int particlesNum = v_particlesPoly[i].size();
+                if(particlesNum > 3){
+                for(int j = 0;j< (particlesNum-1) ; j++){
+                    for(int k = (j+1);k<particlesNum ; k++){
+                        checkPos1 = v_particlesPoly[i][j].get()->polyShape.getPosition();
+                        checkPos2 = v_particlesPoly[i][k].get()->polyShape.getPosition();
+                        posDist = (checkPos1 - checkPos2).length();
+                        if (posDist > 35 and posDist < 150){
+                            v_particlesPoly[i][k].get()->polyShape.destroy();
+                            v_particlesPoly[i][k] = v_particlesPoly[i].back();
+                            v_particlesPoly[i].pop_back();
+                            particlesNum -= 1;
                         }
                     }
                 }
-                i_CheckCountPoly = (i_CheckCountPoly + 1) % particlesPoly.size();
-
+                }
             }
-            
-            
         }
-
+        cout << endl;
     }
     
     
@@ -279,34 +232,39 @@ void testApp::update() {
         sender.sendMessage( m );
     }
     
-    //particles[0]->update();
     
-    /*for(int i=0;i<particles.size();i++){
-        particles[i].get()->setRadius(MIN(100, particles[i].get()->getRadius()+1));
-    }*/
+    
     ofVec2f nowPos;
-    
-
-    
-    nowPos = particles[i_DestroyCheckCount].get()->getPosition();
-    //if((nowPos[0] < drawX) or (nowPos[0] > (drawX + drawW)) or (nowPos[1] < drawY) or (nowPos[1] > (drawY + drawH)) ){
+    if(v_particles[i_DestroyCheckCountId].size() > 0){
+    if(i_DestroyCheckCount >= v_particles[i_DestroyCheckCountId].size())i_DestroyCheckCount = 0;
+            
+    nowPos = v_particles[i_DestroyCheckCountId][i_DestroyCheckCount].get()->getPosition();
     if((nowPos[0] < 0) or (nowPos[0] > (drawX*2 + drawW)) or (nowPos[1] < 0) or (nowPos[1] > (drawY*2 + drawH)) ){
-        particles[i_DestroyCheckCount].get()->destroy();
-        particles[i_DestroyCheckCount] = particles.back();
-        particles.pop_back();
+        v_particles[i_DestroyCheckCountId][i_DestroyCheckCount].get()->destroy();
+        v_particles[i_DestroyCheckCountId][i_DestroyCheckCount] = v_particles[i_DestroyCheckCountId].back();
+        v_particles[i_DestroyCheckCountId].pop_back();
     }
-    
-    nowPos = particlesPoly[i_DestroyCheckCountPoly].get()->polyShape.getPosition();
-    //if((nowPos[0] < drawX) or (nowPos[0] > (drawX + drawW)) or (nowPos[1] < drawY) or (nowPos[1] > (drawY + drawH)) ){
-    if((nowPos[0] < 0) or (nowPos[0] > (drawX*2 + drawW)) or (nowPos[1] < 0) or (nowPos[1] > (drawY*2 + drawH)) ){
-        particlesPoly[i_DestroyCheckCountPoly].get()->polyShape.destroy();
-        particlesPoly[i_DestroyCheckCountPoly] = particlesPoly.back();
-        particlesPoly.pop_back();
+    i_DestroyCheckCount += 1;
+    if(i_DestroyCheckCount == v_particles[i_DestroyCheckCountId].size()){
+        i_DestroyCheckCount = 0;
+        i_DestroyCheckCountId = (i_DestroyCheckCountId + 1) % v_particles.size();
     }
-    i_DestroyCheckCount = (i_DestroyCheckCount + 1) % particles.size();
-    i_DestroyCheckCountPoly = (i_DestroyCheckCountPoly + 1) % particlesPoly.size();
+    }
+    if(v_particlesPoly[i_DestroyCheckCountPolyId].size() > 0 ){
+    if(i_DestroyCheckCountPoly >= v_particlesPoly[i_DestroyCheckCountPolyId].size())i_DestroyCheckCountPoly=0;
 
-    
+    nowPos = v_particlesPoly[i_DestroyCheckCountPolyId][i_DestroyCheckCountPoly].get()->polyShape.getPosition();
+    if((nowPos[0] < 0) or (nowPos[0] > (drawX*2 + drawW)) or (nowPos[1] < 0) or (nowPos[1] > (drawY*2 + drawH)) ){
+        v_particlesPoly[i_DestroyCheckCountPolyId][i_DestroyCheckCountPoly].get()->polyShape.destroy();
+        v_particlesPoly[i_DestroyCheckCountPolyId][i_DestroyCheckCountPoly] = v_particlesPoly[i_DestroyCheckCountPolyId].back();
+        v_particlesPoly[i_DestroyCheckCountPolyId].pop_back();
+    }
+    i_DestroyCheckCountPoly += 1;
+    if(i_DestroyCheckCountPoly == v_particlesPoly[i_DestroyCheckCountPolyId].size()){
+        i_DestroyCheckCountPoly = 0;
+        i_DestroyCheckCountPolyId = (i_DestroyCheckCountPolyId + 1) % v_particlesPoly.size();
+    }
+    }
 }
 
 
@@ -337,6 +295,19 @@ void testApp::draw() {
     for (int i=0; i<particlesPoly.size(); i++) {
         particlesPoly[i].get()->draw();
     }
+    
+    for(int i=0; i<v_particles.size(); i++) {
+        for(int j=0; j<v_particles[i].size(); j++) {
+            v_particles[i][j].get()->draw();
+        }
+    }
+    for (int i=0; i<v_particlesPoly.size(); i++) {
+        for(int j=0; j<v_particlesPoly[i].size(); j++) {
+            //cout << "draw"<< i <<":"<<j<<endl;
+            v_particlesPoly[i][j].get()->draw();
+        }
+    }
+    
     
     ofSetHexColor(0x444342);
     ofNoFill();
@@ -444,6 +415,17 @@ void testApp::keyPressed(int key) {
             for(int i=0; i<particlesPoly.size(); i++) {
                 particlesPoly[i]->b_Debug = b_Debug;
             }
+            for(int i=0; i<v_particles.size(); i++) {
+                for(int j=0; j<v_particles[i].size(); j++) {
+                    v_particles[i][j]->b_Debug = b_Debug;
+                }
+            }
+            
+            for (int i=0; i<v_particlesPoly.size(); i++) {
+                for(int j=0; j<v_particlesPoly[i].size(); j++) {
+                    v_particlesPoly[i][j]->b_Debug = b_Debug;
+                }
+            }
             break;
         case 'r':
             avoidImage.resize(drawW, drawH);
@@ -495,6 +477,16 @@ void testApp::avoidRemove(){
                 for(int i=0;i<particlesPoly.size();i++){
                     particlesPoly[i].get()->deletePos(pos);
                 }
+                for(int i=0; i<v_particles.size(); i++) {
+                    for(int j=0; j<v_particles[i].size(); j++) {
+                        v_particles[i][j].get()->deletePos(pos);
+                    }
+                }
+                for (int i=0; i<v_particlesPoly.size(); i++) {
+                    for(int j=0; j<v_particlesPoly[i].size(); j++) {
+                        v_particlesPoly[i][j].get()->deletePos(pos);
+                    }
+                }
             }
         }
     }
@@ -526,6 +518,17 @@ void testApp::mousePressed(int x, int y, int button) {
         for(int i=0;i<particlesPoly.size();i++){
             particlesPoly[i].get()->deletePos(pos);
         }
+        for(int i=0; i<v_particles.size(); i++) {
+            for(int j=0; j<v_particles[i].size(); j++) {
+                v_particles[i][j].get()->deletePos(pos);
+            }
+        }
+        for (int i=0; i<v_particlesPoly.size(); i++) {
+            for(int j=0; j<v_particlesPoly[i].size(); j++) {
+                v_particlesPoly[i][j].get()->deletePos(pos);
+            }
+        }
+
         
         lines.push_back(ofPolyline());
         lines.back().addVertex(x, y);
