@@ -1,8 +1,8 @@
 #include "ofApp.h"
 
 int TEXTURE_SIZE[3][3] = {
-    {40,45,0},
-    {40,45,0},
+    {25,30,0},
+    {25,30,0},
     {55,60,1}
 };
 #define TEXTURE_RAND_SIZE 7
@@ -71,6 +71,7 @@ void testApp::setup() {
     printf("%i Textures Loaded\n", (int)textures.size());
     printf("%i TexturesPoly Loaded\n", (int)texturesPoly.size());
 
+    b_Camera = true;
 #ifdef _USE_LIVE_VIDEO
 #ifdef _USE_BLACKMAGIC
     cam.setup(BLACKMAGIC_W, BLACKMAGIC_H, BLACKMAGIC_FPS);
@@ -83,6 +84,15 @@ void testApp::setup() {
     movie.setVolume(0.0);
     movie.play();
 #endif
+    
+    gui.setup();
+    gui.add(p_frameLeft.setup("p_frameLeft", 0.3, 0, 1.0));
+    gui.add(p_frameTop.setup("p_frameTop", 0.3, 0, 1.0));
+    gui.add(p_frameRight.setup("p_frameRight", 0.5, 0, 1.0));
+    gui.add(p_frameBottom.setup("p_frameBottom", 0.5, 0, 1.0));
+    gui.add(p_DepthMin.setup("p_DepthMin", 10, 0, 255));
+    gui.add(p_DepthMax.setup("p_DepthMax", 250, 0, 255));
+    gui.setPosition(ofGetWidth()/2, 0);
     
     // load the lines we saved...
     if(0){
@@ -136,6 +146,11 @@ void testApp::setup() {
     i_DestroyCheckCountPolyId = 0;
     i_CheckCount = 0;
     i_CheckCountPoly = 0;
+    
+    i_ParticlesSum = 0;
+    
+    b_StartPyCam = false;
+    b_WaitCamReply = false;
 }
 
 //--------------------------------------------------------------
@@ -145,32 +160,40 @@ void testApp::update() {
     updateCam();
     updateOSC();
     
-	box2d.update();
+    for(int i=0;i<4;i++){
+        box2d.update();
+    }
     
     
     if(b_AutoBorn){
-        for(int i=0;i<10;i++){
+        for(int i=0;i<400;i++){
             int textureIdx = TEXTURE_RAND[ (int)ofRandom(TEXTURE_RAND_SIZE)];
             shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
             p.get()->setPhysics(1.0 / TEXTURE_SIZE[textureIdx][0], 0, 0);
-            p.get()->setup(box2d.getWorld(),  fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), ofRandom(TEXTURE_SIZE[textureIdx][0], TEXTURE_SIZE[textureIdx][1]) );
+            float radiusBuf = ofRandom(TEXTURE_SIZE[textureIdx][0], TEXTURE_SIZE[textureIdx][1]);
+            p.get()->setup(box2d.getWorld(),  fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), radiusBuf );
             p.get()->setVelocity(ofRandom(-3, 3), ofRandom(-3, 3));
             p.get()->setupTheCustomData();
             p.get()->setTexture(&textures[textureIdx]);
             p.get()->setTextureId(textureIdx);
             //particles.push_back(p);
             v_particles[textureIdx].push_back(p);
-        }
-        
-        for(int i=0;i<10;i++){
-            int textureIdx = (int)ofRandom(texturesPoly.size());
-            
-            shared_ptr<TextureShape> p = shared_ptr<TextureShape>(new TextureShape);
-            p.get()->setup(box2d,textureIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), ofRandom(TEXTURE_POLY_SIZE[textureIdx][0], TEXTURE_POLY_SIZE[textureIdx][1]));
-            p.get()->setTexture(&texturesPoly[textureIdx]);
-            p.get()->setTextureId(textureIdx);
+            i_ParticlesSum += (int)(radiusBuf * radiusBuf);
+
+            int texturePolyIdx = (int)ofRandom(texturesPoly.size());
+            shared_ptr<TextureShape> pPoly = shared_ptr<TextureShape>(new TextureShape);
+            float radiusPolyBuf =  ofRandom(TEXTURE_POLY_SIZE[texturePolyIdx][0], TEXTURE_POLY_SIZE[texturePolyIdx][1]);
+            pPoly.get()->setup(box2d,texturePolyIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), radiusPolyBuf);
+            pPoly.get()->setTexture(&texturesPoly[texturePolyIdx]);
+            pPoly.get()->setTextureId(texturePolyIdx);
             //particlesPoly.push_back(p);
-            v_particlesPoly[textureIdx].push_back(p);
+            v_particlesPoly[texturePolyIdx].push_back(pPoly);
+            i_ParticlesSum += (int)(radiusPolyBuf * radiusPolyBuf);
+
+            if(i_ParticlesSum > PARTICLE_MAX){
+            //if(i_ParticlesSum > 3000){
+                b_AutoBorn = false;
+            }
         }
     }
     if(b_Auto){
@@ -186,7 +209,7 @@ void testApp::update() {
                         checkPos1 = v_particles[i][j].get()->getPosition();
                         checkPos2 = v_particles[i][k].get()->getPosition();
                         posDist = (checkPos1 - checkPos2).length();
-                        if (posDist > 65 and posDist < 150){
+                        if (posDist > 20 and posDist < 120){
                             v_particles[i][k].get()->destroy();
                             v_particles[i][k] = v_particles[i].back();
                             v_particles[i].pop_back();
@@ -209,7 +232,7 @@ void testApp::update() {
                         checkPos1 = v_particlesPoly[i][j].get()->polyShape.getPosition();
                         checkPos2 = v_particlesPoly[i][k].get()->polyShape.getPosition();
                         posDist = (checkPos1 - checkPos2).length();
-                        if (posDist > 35 and posDist < 150){
+                        if (posDist > 35 and posDist < 120){
                             v_particlesPoly[i][k].get()->polyShape.destroy();
                             v_particlesPoly[i][k] = v_particlesPoly[i].back();
                             v_particlesPoly[i].pop_back();
@@ -230,6 +253,17 @@ void testApp::update() {
         m.setAddress( "/image/saved" );
         m.addStringArg(filenameCapture);
         sender.sendMessage( m );
+    }
+    
+    if(b_StartPyCam){
+        if(b_WaitCamReply){
+            
+        }else{
+            ofxOscMessage m;
+            m.setAddress( "/cam/kick" );
+            sender.sendMessage( m );
+            b_WaitCamReply = true;
+        }
     }
     
     
@@ -282,10 +316,16 @@ void testApp::draw() {
     drawX = ofGetWidth()/2 * 0.1;
     drawY = (ofGetHeight() - drawH)/2;
     inputCam.draw(drawX, drawY, drawW, drawH);
+    PyCamColor.draw(drawX, drawY, drawW, drawH);
+
+    if(!b_Camera){
+        avoidImageOri.draw(drawX, drawY, drawW, drawH);
+    }
     
-    avoidImageOri.draw(drawX, drawY, drawW, drawH);
-    
-    contourFinder.draw(drawX,drawY);
+    ofPushMatrix();
+    ofScale(CONT_RESIZE/2, CONT_RESIZE/2);
+    contourFinder.draw(ofGetWidth()/2 + drawX,drawY);
+    ofPopMatrix();
 
     ofSetHexColor(0xffffff);
 	for(int i=0; i<particles.size(); i++) {
@@ -353,12 +393,25 @@ void testApp::draw() {
     }
     
     if(b_Debug){
+        ofPushStyle();
         string info = "FPS: "+ofToString(ofGetFrameRate(), 1);
         info += "\n";
         info += osc_message;
         ofSetHexColor(0x444342);
         ofDrawBitmapString(info, 20, 20);
+        
+        ofSetColor(255, 0, 0);
+        ofDrawRectangle(drawX + drawW * p_frameLeft, drawY + drawH * p_frameTop, drawW * (p_frameRight - p_frameLeft), drawH * (p_frameBottom - p_frameTop));
+        ofPopStyle();
     }
+    
+    gui.draw();
+    
+    ofSetColor(255, 255, 255);
+    grayImageResize.draw(ofGetWidth()/2,0);
+    PyCamDepth.draw(ofGetWidth()/2,480,360,480);
+    PyCamColor.draw(ofGetWidth()/2+360,480,360,480);
+    depthGrayCvImage.draw(ofGetWidth()/2+360,0,360,480);
 }
 
 
@@ -391,9 +444,10 @@ void testApp::keyPressed(int key) {
             avoidRemove();
             break;
         case 'c':
-            lines.clear();
-            edges.clear();
-            avoidEdges.clear();
+            //lines.clear();
+            //edges.clear();
+            //avoidEdges.clear();
+            b_Camera = !b_Camera;
             break;
         case 'f':
             ofToggleFullscreen();
@@ -406,6 +460,7 @@ void testApp::keyPressed(int key) {
             break;
         case ' ':
             b_AutoBorn = !b_AutoBorn;
+            cout <<"particles sum: "<< i_ParticlesSum <<endl;
             break;
         case 'd':
             b_Debug = !b_Debug;
@@ -431,21 +486,27 @@ void testApp::keyPressed(int key) {
             avoidImage.resize(drawW, drawH);
             colorImg.allocate(drawW, drawH);
             grayImage.allocate(drawW, drawH);
+            grayImageResize.allocate(drawW, drawH);
             colorImg.setFromPixels(avoidImage.getPixels().getData(),drawW,drawH);
             grayImage = colorImg;
+            grayImageResize = grayImage;
             grayImage.threshold(100);
-            contourFinder.findContours(grayImage, 20,
-                                       (drawW * drawH)/3, 10, true);
-            
+            grayImageResize.resize(drawW/CONT_RESIZE, drawH/CONT_RESIZE);
+            grayImageResize.threshold(10);
+            //contourFinder.findContours(grayImageResize, 20,
+            //                           (drawW * drawH)/3, 10, true);
+            contourFinder.findContours(grayImageResize, 20,
+                                       ( (drawW/CONT_RESIZE) * (drawH/CONT_RESIZE))/3, 10, true);
+
             ofPoint pointBuf;
             pointBuf.set(drawX, drawY);
             
             for(int i = 0; i< contourFinder.nBlobs; i++){
                 shared_ptr <ofxBox2dEdge> edge = shared_ptr<ofxBox2dEdge>(new ofxBox2dEdge);
                 for(int j = 0; j<contourFinder.blobs[i].pts.size(); j++){
-                    edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[j]);
+                    edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[j] * CONT_RESIZE);
                 }
-                edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[0]);
+                edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[0] * CONT_RESIZE);
                 edge.get()->create(box2d.getWorld());
                 avoidEdges.push_back(edge);
             }
@@ -639,6 +700,32 @@ void testApp::updateOSC(){
             cout <<"[OSC]" << str <<endl;
             osc_message = "[OSC] status" + str;
         }
+        if ( m.getAddress() == "/cam/start" ){
+            cout <<"[OSC] cam stand by" <<endl;
+            osc_message = "[OSC] cam stand by";
+            b_StartPyCam = true;
+        }
+        if ( m.getAddress() == "/cam/got" ){
+            cout <<"[OSC] got cam data" <<endl;
+            osc_message = "[OSC] got cam data";
+            b_WaitCamReply = false;
+            PyCamColor.load("color.png");
+            PyCamDepth.load("depth.png");
+            
+            int PyCamWidth,PyCamHeight;
+            PyCamWidth = PyCamDepth.getWidth();
+            PyCamHeight = PyCamDepth.getHeight();
+            depthColorCvImage.allocate(PyCamWidth, PyCamHeight);
+            depthGrayCvImage.allocate(PyCamWidth, PyCamHeight);
+            depthGrayCvImage2.allocate(PyCamWidth, PyCamHeight);
+            
+            depthGrayCvImage.setFromPixels(PyCamDepth.getPixels());
+            //depthGrayCvImage = depthColorCvImage;
+            depthGrayCvImage2 = depthGrayCvImage;
+            depthGrayCvImage.threshold(p_DepthMin);
+            depthGrayCvImage2.threshold(p_DepthMax);
+            depthGrayCvImage.absDiff(depthGrayCvImage2);
+        }
     }
 }
 
@@ -652,6 +739,9 @@ void testApp::updateCam(){
         camPixels.resize(CAPTURE_W, CAPTURE_H);
         camPixels.setImageType(OF_IMAGE_COLOR);
 
+        inputCam.setFromPixels(camPixels);
+        inputCam.crop((CAPTURE_W - CANVAS_W)/2 , 0, CANVAS_W, CANVAS_H);
+        cropCam = inputCam;
         //perspective.setPixels(camPixels);
         //perspective.update();
         //colorImg.setFromPixels(camPixels);

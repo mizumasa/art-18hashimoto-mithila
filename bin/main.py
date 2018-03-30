@@ -15,12 +15,20 @@ import OSC
 import time, random
 import threading
 
+sys.path.append("/usr/local/lib")
+
+import pyrealsense2 as rs
+import cv2
+
+
 OSC_PORT_OF2PY = 7110
 OSC_PORT_PY2OF = 7111
 SEND_ADDRESS = '127.0.0.1', OSC_PORT_PY2OF
 RECV_ADDRESS = '127.0.0.1', OSC_PORT_OF2PY
 
 FILEBASE = "/Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/data/"
+
+DIR_NAME = os.path.dirname(os.path.abspath(__file__))
 
 from imgurpython import ImgurClient
 import qrcode
@@ -69,6 +77,7 @@ class PyModule:
 		self.s.addDefaultHandlers()
 		#self.s.addMsgHandler("/bapabar/test", printing_handler)
 		self.s.addMsgHandler("/image/saved", self.imageSaved)
+		self.s.addMsgHandler("/cam/kick", self.camKick)
 		self.s.addMsgHandler("/test", self.printMsg)
 		self.s.addMsgHandler("/kill", self.kill)
 		self.st = threading.Thread( target = self.s.serve_forever )
@@ -81,6 +90,33 @@ class PyModule:
 		msg.setAddress("/test")
 		msg.append(1)
 		self.c2.send(msg)
+
+		try:
+			print "[PY] intel camera setup"
+			self.pipeline = rs.pipeline()
+			self.config = rs.config()
+			self.config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+			self.config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+			self.pipeline.start(self.config)
+		except:
+			print "[PY] intel camera setup error"
+			msg = OSC.OSCMessage() 
+			msg.setAddress("/kill")
+			msg.append(1)
+			self.c2.send(msg)
+			return
+		print "[PY] intel camera setup done"
+		
+		try:
+			msg = OSC.OSCMessage() 
+			msg.setAddress("/cam/start")
+			self.c.send(msg)
+		except:
+			print "[PY] error (need to setup oF server)"
+			msg = OSC.OSCMessage() 
+			msg.setAddress("/kill")
+			msg.append(1)
+			self.c2.send(msg)
 
 		if 0:#finish in 4 sec
 			time.sleep(4)
@@ -115,6 +151,33 @@ class PyModule:
 		print "typetags %s" % tags
 		print "data %s" % stuff
 		
+
+	def camKick(self, addr, tags, stuff, source):
+		print "[PY] intel camera kick"
+		frames = self.pipeline.wait_for_frames()
+		depth_frame = frames.get_depth_frame()
+		color_frame = frames.get_color_frame()
+		if not depth_frame or not color_frame:
+			return
+		depth_image = np.asanyarray(depth_frame.get_data())
+		color_image = np.asanyarray(color_frame.get_data())
+		
+		depth8bit = cv2.convertScaleAbs(depth_image[:,160:1120], alpha=0.03)
+		depth8bit = np.rot90(depth8bit,3)
+		cv2.imwrite(os.path.join(DIR_NAME, "data/depth.png"), depth8bit)
+
+		#depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image[:,160:1120], alpha=0.03), cv2.COLORMAP_JET)
+		#depth_colormap = np.rot90(depth_colormap,3)
+		#cv2.imwrite(os.path.join(DIR_NAME, "data/depth.png"), depth_colormap)
+
+		color_image = np.rot90(color_image[:,160:1120,:],3)
+		cv2.imwrite(os.path.join(DIR_NAME, "data/color.png"), color_image)
+		msg = OSC.OSCMessage() 
+		msg.setAddress("/cam/got")
+		self.c.send(msg)
+
+
+
 	def kill(self, addr, tags, stuff, source):
 		self.flag = False
 		print "---"

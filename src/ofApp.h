@@ -11,7 +11,7 @@
 #include "ofxBlackMagic.h"
 
 //#define _USE_BLACKMAGIC
-#define _USE_LIVE_VIDEO
+//#define _USE_LIVE_VIDEO
 
 #define BLACKMAGIC_W 1920
 #define BLACKMAGIC_H 1080
@@ -39,7 +39,10 @@
 
 #define CHECK_NUM_PER_FRAME 300 
 
+#define CONT_RESIZE 4.0
 
+//#define PARTICLE_MAX 3000000
+#define PARTICLE_MAX 30000
 
 class RateTimer {
 protected:
@@ -146,6 +149,14 @@ public:
     ofVideoPlayer         movie;
 #endif
     
+    ofxPanel gui;
+    ofxFloatSlider p_frameLeft;
+    ofxFloatSlider p_frameTop;
+    ofxFloatSlider p_frameRight;
+    ofxFloatSlider p_frameBottom;
+    ofxIntSlider p_DepthMin;
+    ofxIntSlider p_DepthMax;
+
     ofImage inputCam;
     ofImage cropCam;
     ofImage imgGrab;
@@ -157,6 +168,7 @@ public:
     
     ofxCvColorImage colorImg;
     ofxCvGrayscaleImage grayImage;
+    ofxCvGrayscaleImage grayImageResize;
     //ofxCvGrayscaleImage grayBg;
     //ofxCvGrayscaleImage grayDiff;
     ofxCvContourFinder contourFinder;
@@ -176,4 +188,16 @@ public:
     int i_DestroyCheckCountPolyId;
     int i_CheckCount;
     int i_CheckCountPoly;
+    uint64_t i_ParticlesSum;
+    bool b_Camera;
+
+    bool b_WaitCamReply;
+    bool b_StartPyCam;
+    ofImage PyCamColor;
+    ofImage PyCamDepth;
+    
+    ofxCvColorImage depthColorCvImage;
+    ofxCvGrayscaleImage depthGrayCvImage;
+    ofxCvGrayscaleImage depthGrayCvImage2;
+
 };
