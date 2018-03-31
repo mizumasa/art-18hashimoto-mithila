@@ -20,7 +20,7 @@ int TEXTURE_POLY_RAND[TEXTURE_POLY_RAND_SIZE] = {0,0,1,1,2};
 
 //--------------------------------------------------------------
 void testApp::setup() {
-    system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
+    if(USE_PYTHON)system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
 	//ofBackgroundHex(0xfdefc2);
     ofBackgroundHex(0xffffff);
     ofSetLogLevel(OF_LOG_NOTICE);
@@ -127,6 +127,7 @@ void testApp::setup() {
     b_Auto = true;
     b_AutoBorn = true;
     b_Debug = false;
+    b_PrintDebug = false;
     b_GrabScreen = false;
     b_Captured = false;
     
@@ -151,6 +152,8 @@ void testApp::setup() {
     
     b_StartPyCam = false;
     b_WaitCamReply = false;
+    
+    b_PyCamDraw = false;
 }
 
 //--------------------------------------------------------------
@@ -167,6 +170,7 @@ void testApp::update() {
     
     if(b_AutoBorn){
         for(int i=0;i<400;i++){
+
             int textureIdx = TEXTURE_RAND[ (int)ofRandom(TEXTURE_RAND_SIZE)];
             shared_ptr<CustomParticle> p = shared_ptr<CustomParticle>(new CustomParticle);
             p.get()->setPhysics(1.0 / TEXTURE_SIZE[textureIdx][0], 0, 0);
@@ -176,20 +180,18 @@ void testApp::update() {
             p.get()->setupTheCustomData();
             p.get()->setTexture(&textures[textureIdx]);
             p.get()->setTextureId(textureIdx);
-            //particles.push_back(p);
             v_particles[textureIdx].push_back(p);
             i_ParticlesSum += (int)(radiusBuf * radiusBuf);
 
             int texturePolyIdx = (int)ofRandom(texturesPoly.size());
             shared_ptr<TextureShape> pPoly = shared_ptr<TextureShape>(new TextureShape);
             float radiusPolyBuf =  ofRandom(TEXTURE_POLY_SIZE[texturePolyIdx][0], TEXTURE_POLY_SIZE[texturePolyIdx][1]);
-            pPoly.get()->setup(box2d,texturePolyIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), radiusPolyBuf);
             pPoly.get()->setTexture(&texturesPoly[texturePolyIdx]);
             pPoly.get()->setTextureId(texturePolyIdx);
-            //particlesPoly.push_back(p);
+            pPoly.get()->setup(box2d,texturePolyIdx, fullWidth/2*ofRandomf(), fullHeight*ofRandomf(), radiusPolyBuf);
             v_particlesPoly[texturePolyIdx].push_back(pPoly);
             i_ParticlesSum += (int)(radiusPolyBuf * radiusPolyBuf);
-
+            
             if(i_ParticlesSum > PARTICLE_MAX){
             //if(i_ParticlesSum > 3000){
                 b_AutoBorn = false;
@@ -200,7 +202,7 @@ void testApp::update() {
         ofVec2f checkPos1, checkPos2;
         float posDist;
         for(int i = 0;i < v_particles.size();i++){
-            cout << v_particles[i].size() << ":";
+            if(b_PrintDebug)cout << v_particles[i].size() << ":";
             if(TEXTURE_SIZE[i][2] == 1){
                 int particlesNum = v_particles[i].size();
                 if(particlesNum > 3){
@@ -223,7 +225,7 @@ void testApp::update() {
         
         
         for(int i = 0;i < v_particlesPoly.size();i++){
-            cout << v_particlesPoly[i].size()<< ":";
+            if(b_PrintDebug)cout << v_particlesPoly[i].size()<< ":";
             if(TEXTURE_POLY_SIZE[i][2] == 1){
                 int particlesNum = v_particlesPoly[i].size();
                 if(particlesNum > 3){
@@ -243,7 +245,8 @@ void testApp::update() {
                 }
             }
         }
-        cout << endl;
+        
+        if(b_PrintDebug)cout << endl;
     }
     
     
@@ -287,6 +290,8 @@ void testApp::update() {
     if(v_particlesPoly[i_DestroyCheckCountPolyId].size() > 0 ){
     if(i_DestroyCheckCountPoly >= v_particlesPoly[i_DestroyCheckCountPolyId].size())i_DestroyCheckCountPoly=0;
 
+        
+        
     nowPos = v_particlesPoly[i_DestroyCheckCountPolyId][i_DestroyCheckCountPoly].get()->polyShape.getPosition();
     if((nowPos[0] < 0) or (nowPos[0] > (drawX*2 + drawW)) or (nowPos[1] < 0) or (nowPos[1] > (drawY*2 + drawH)) ){
         v_particlesPoly[i_DestroyCheckCountPolyId][i_DestroyCheckCountPoly].get()->polyShape.destroy();
@@ -299,6 +304,7 @@ void testApp::update() {
         i_DestroyCheckCountPolyId = (i_DestroyCheckCountPolyId + 1) % v_particlesPoly.size();
     }
     }
+    
 }
 
 
@@ -315,9 +321,12 @@ void testApp::draw() {
     drawH = (int)(drawW * CANVAS_H / CANVAS_W);
     drawX = ofGetWidth()/2 * 0.1;
     drawY = (ofGetHeight() - drawH)/2;
-    inputCam.draw(drawX, drawY, drawW, drawH);
-    PyCamColor.draw(drawX, drawY, drawW, drawH);
-
+    
+    if(b_PyCamDraw){
+        inputCam.draw(drawX, drawY, drawW, drawH);
+        PyCamColor.draw(drawX, drawY, drawW, drawH);
+    }
+    
     if(!b_Camera){
         avoidImageOri.draw(drawX, drawY, drawW, drawH);
     }
@@ -327,14 +336,6 @@ void testApp::draw() {
     contourFinder.draw(ofGetWidth()/2 + drawX,drawY);
     ofPopMatrix();
 
-    ofSetHexColor(0xffffff);
-	for(int i=0; i<particles.size(); i++) {
-		particles[i].get()->draw();
-	}
-    
-    for (int i=0; i<particlesPoly.size(); i++) {
-        particlesPoly[i].get()->draw();
-    }
     
     for(int i=0; i<v_particles.size(); i++) {
         for(int j=0; j<v_particles[i].size(); j++) {
@@ -407,11 +408,13 @@ void testApp::draw() {
     
     gui.draw();
     
-    ofSetColor(255, 255, 255);
-    grayImageResize.draw(ofGetWidth()/2,0);
-    PyCamDepth.draw(ofGetWidth()/2,480,360,480);
-    PyCamColor.draw(ofGetWidth()/2+360,480,360,480);
-    depthGrayCvImage.draw(ofGetWidth()/2+360,0,360,480);
+    if(b_PyCamDraw){
+        ofSetColor(255, 255, 255);
+        grayImageResize.draw(ofGetWidth()/2,0);
+        PyCamDepth.draw(ofGetWidth()/2,480,360,480);
+        PyCamColor.draw(ofGetWidth()/2+360,480,360,480);
+        depthGrayCvImage.draw(ofGetWidth()/2+360,0,360,480);
+    }
 }
 
 
@@ -464,12 +467,6 @@ void testApp::keyPressed(int key) {
             break;
         case 'd':
             b_Debug = !b_Debug;
-            for(int i=0; i<particles.size(); i++) {
-                particles[i]->b_Debug = b_Debug;
-            }
-            for(int i=0; i<particlesPoly.size(); i++) {
-                particlesPoly[i]->b_Debug = b_Debug;
-            }
             for(int i=0; i<v_particles.size(); i++) {
                 for(int j=0; j<v_particles[i].size(); j++) {
                     v_particles[i][j]->b_Debug = b_Debug;
@@ -532,12 +529,6 @@ void testApp::avoidRemove(){
             buf = int(pixelBuf[i]);
             if(buf > 100){
                 pos = ofVec2f(drawX + int(i%width) ,drawY + int(i/width));
-                for(int i=0;i<particles.size();i++){
-                    particles[i].get()->deletePos(pos);
-                }
-                for(int i=0;i<particlesPoly.size();i++){
-                    particlesPoly[i].get()->deletePos(pos);
-                }
                 for(int i=0; i<v_particles.size(); i++) {
                     for(int j=0; j<v_particles[i].size(); j++) {
                         v_particles[i][j].get()->deletePos(pos);
@@ -573,12 +564,6 @@ void testApp::mousePressed(int x, int y, int button) {
         vvf_EditLog.push_back(ofVec2f((x % EDIT_SIZE) * 2.0/ EDIT_SIZE - 1.0, y * 2.0/EDIT_SIZE - 1.0));
     }else{
         ofVec2f pos = ofVec2f(x,y);
-        for(int i=0;i<particles.size();i++){
-            particles[i].get()->deletePos(pos);
-        }
-        for(int i=0;i<particlesPoly.size();i++){
-            particlesPoly[i].get()->deletePos(pos);
-        }
         for(int i=0; i<v_particles.size(); i++) {
             for(int j=0; j<v_particles[i].size(); j++) {
                 v_particles[i][j].get()->deletePos(pos);
@@ -725,6 +710,7 @@ void testApp::updateOSC(){
             depthGrayCvImage.threshold(p_DepthMin);
             depthGrayCvImage2.threshold(p_DepthMax);
             depthGrayCvImage.absDiff(depthGrayCvImage2);
+            b_PyCamDraw = true;
         }
     }
 }

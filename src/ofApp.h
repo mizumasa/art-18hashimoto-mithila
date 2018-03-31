@@ -13,6 +13,8 @@
 //#define _USE_BLACKMAGIC
 //#define _USE_LIVE_VIDEO
 
+#define USE_PYTHON 0
+
 #define BLACKMAGIC_W 1920
 #define BLACKMAGIC_H 1080
 #define BLACKMAGIC_FPS 30
@@ -42,7 +44,8 @@
 #define CONT_RESIZE 4.0
 
 //#define PARTICLE_MAX 3000000
-#define PARTICLE_MAX 30000
+//#define PARTICLE_MAX 30000
+#define PARTICLE_MAX 3000000
 
 class RateTimer {
 protected:
@@ -104,11 +107,9 @@ public:
 	void windowResized(int w, int h);
 	
 	ofxBox2d                            box2d;
-	vector <shared_ptr<CustomParticle> >		particles;
     vector< vector <shared_ptr<CustomParticle> >>        v_particles;
 
     vector <ofImage> texturesPoly;
-    vector <shared_ptr<TextureShape> > particlesPoly;
     vector< vector <shared_ptr<TextureShape> >> v_particlesPoly;
 
     
@@ -118,6 +119,7 @@ public:
     bool                                b_Auto;
     bool                                b_AutoBorn;
     bool                                b_Debug;
+    bool                                b_PrintDebug;
     bool                                b_Edit;
     vector<ofVec2f> vvf_EditLog;
 
@@ -195,6 +197,7 @@ public:
     bool b_StartPyCam;
     ofImage PyCamColor;
     ofImage PyCamDepth;
+    bool b_PyCamDraw;
     
     ofxCvColorImage depthColorCvImage;
     ofxCvGrayscaleImage depthGrayCvImage;
