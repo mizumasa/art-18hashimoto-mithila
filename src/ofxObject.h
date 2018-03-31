@@ -145,6 +145,33 @@ public:
     }
 };
 
+class countDown {
+private:
+    int i_NowId;
+public:
+    vector<ofImage>   v_Image;
+    countDown() {
+    }
+    void setup(){
+        ofImage buf1, buf2, buf3;
+        buf1.load("1.png");
+        buf2.load("2.png");
+        buf3.load("3.png");
+        v_Image.push_back(buf1);
+        v_Image.push_back(buf2);
+        v_Image.push_back(buf3);
+    }
+    void set(int i){
+        i_NowId = i;
+    }
+    void draw() {
+        if(i_NowId>0){
+            ofPushMatrix();ofPushStyle();
+            v_Image[i_NowId - 1].draw(ofGetWidth()/2, 200);
+            ofPopStyle();ofPopMatrix();
+        }
+    }
+};
 
 #endif
 

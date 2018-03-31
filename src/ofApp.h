@@ -13,7 +13,7 @@
 //#define _USE_BLACKMAGIC
 //#define _USE_LIVE_VIDEO
 
-#define USE_PYTHON 0
+#define USE_PYTHON 1
 
 #define BLACKMAGIC_W 1920
 #define BLACKMAGIC_H 1080
@@ -32,6 +32,10 @@
 
 #define CANVAS_W 810
 #define CANVAS_H 1080
+
+#define DEBUG_CANVAS_W 300
+#define DEBUG_CANVAS_H 400
+
 
 #define OSC_IP "localhost"
 #define OSC_PORT_OF2PY 7110
@@ -105,7 +109,8 @@ public:
 	void mousePressed(int x, int y, int button);
 	void mouseReleased(int x, int y, int button);
 	void windowResized(int w, int h);
-	
+    void makeAvoidImage();
+    void clearAvoidImage();
 	ofxBox2d                            box2d;
     vector< vector <shared_ptr<CustomParticle> >>        v_particles;
 
@@ -176,7 +181,8 @@ public:
     ofxCvContourFinder contourFinder;
     
     bool b_Captured;
-    
+    bool b_CapturedOnce;
+
     ofxOscSender sender;
     ofxOscReceiver receiver;
     string osc_message;
@@ -196,6 +202,7 @@ public:
     bool b_WaitCamReply;
     bool b_StartPyCam;
     ofImage PyCamColor;
+    ofImage PyCamColorBuffer;
     ofImage PyCamDepth;
     bool b_PyCamDraw;
     
@@ -203,4 +210,11 @@ public:
     ofxCvGrayscaleImage depthGrayCvImage;
     ofxCvGrayscaleImage depthGrayCvImage2;
 
+    countDown objCountDown;
+    int i_WhiteFadeLevel;
+    bool b_QrUploaded;
+    ofImage imageQr;
 };
+
+
+

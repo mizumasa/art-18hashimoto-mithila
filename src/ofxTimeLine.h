@@ -20,8 +20,11 @@ enum ACT_ID{
     AID_COUNT_1,
     AID_SHOOT,//5
     AID_EDIT,
+    AID_RESULT_CAPTURE,
     AID_RESULT_SHOW,
+    AID_RESULT_SHOW_WAIT,
     AID_GOODBYE,
+    AID_IDLE,
 };
 
 class ofxFragment{

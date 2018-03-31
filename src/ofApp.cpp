@@ -90,8 +90,8 @@ void testApp::setup() {
     gui.add(p_frameTop.setup("p_frameTop", 0.3, 0, 1.0));
     gui.add(p_frameRight.setup("p_frameRight", 0.5, 0, 1.0));
     gui.add(p_frameBottom.setup("p_frameBottom", 0.5, 0, 1.0));
-    gui.add(p_DepthMin.setup("p_DepthMin", 10, 0, 255));
-    gui.add(p_DepthMax.setup("p_DepthMax", 250, 0, 255));
+    gui.add(p_DepthMin.setup("p_DepthMin", 7, 0, 255));
+    gui.add(p_DepthMax.setup("p_DepthMax", 28, 0, 255));
     gui.setPosition(ofGetWidth()/2, 0);
     
     // load the lines we saved...
@@ -125,11 +125,13 @@ void testApp::setup() {
     
     
     b_Auto = true;
-    b_AutoBorn = true;
-    b_Debug = false;
+    b_AutoBorn = false;
+    b_Debug = true;
     b_PrintDebug = false;
     b_GrabScreen = false;
     b_Captured = false;
+    b_CapturedOnce = false;
+    
     
     setupSequence();
 
@@ -154,6 +156,8 @@ void testApp::setup() {
     b_WaitCamReply = false;
     
     b_PyCamDraw = false;
+    objCountDown.setup();
+    i_WhiteFadeLevel = 0;
 }
 
 //--------------------------------------------------------------
@@ -162,11 +166,6 @@ void testApp::update() {
     updateSequence();
     updateCam();
     updateOSC();
-    
-    for(int i=0;i<4;i++){
-        box2d.update();
-    }
-    
     
     if(b_AutoBorn){
         for(int i=0;i<400;i++){
@@ -250,8 +249,8 @@ void testApp::update() {
     }
     
     
-    if(b_Captured){
-        b_Captured = false;
+    if(b_CapturedOnce){
+        b_CapturedOnce = false;
         ofxOscMessage m;
         m.setAddress( "/image/saved" );
         m.addStringArg(filenameCapture);
@@ -305,6 +304,7 @@ void testApp::update() {
     }
     }
     
+
 }
 
 
@@ -326,6 +326,11 @@ void testApp::draw() {
         inputCam.draw(drawX, drawY, drawW, drawH);
         PyCamColor.draw(drawX, drawY, drawW, drawH);
     }
+    
+    if(sequence.getIdNow() == AID_SHOOT or sequence.getIdNow() == AID_EDIT or sequence.getIdNow() == AID_RESULT_CAPTURE){
+        PyCamColorBuffer.draw(drawX, drawY, drawW, drawH);
+    }
+    
     
     if(!b_Camera){
         avoidImageOri.draw(drawX, drawY, drawW, drawH);
@@ -349,7 +354,7 @@ void testApp::draw() {
         }
     }
     
-    
+    ofPushMatrix();ofPushStyle();
     ofSetHexColor(0x444342);
     ofNoFill();
     for (int i=0; i<lines.size(); i++) {
@@ -358,14 +363,15 @@ void testApp::draw() {
     for (int i=0; i<edges.size(); i++) {
         edges[i].get()->draw();
     }
-	
+    ofPopStyle();ofPopMatrix();
+
     ofPushMatrix();ofPushStyle();
-    {
+    if(!b_Debug){
         ofFill();
         ofSetColor(255, 255, 255);
-        ofDrawRectangle(0, 0, drawX, ofGetHeight());
+        ofDrawRectangle(-ofGetWidth() / 2, 0, drawX+ ofGetWidth() / 2, ofGetHeight());
         ofDrawRectangle(0, 0, ofGetWidth() / 2, drawY);
-        ofDrawRectangle(drawX+drawW, 0, drawX, ofGetHeight());
+        ofDrawRectangle(drawX+drawW, 0, drawX + ofGetWidth() / 2, ofGetHeight());
         ofDrawRectangle(0, drawY+drawH, ofGetWidth() / 2, drawY);
     }
     ofPopStyle();ofPopMatrix();
@@ -391,10 +397,51 @@ void testApp::draw() {
         imgGrab.save(filename);
         filenameCapture = filename;
         b_Captured = true;
+        b_CapturedOnce = true;
+        i_WhiteFadeLevel = 255;
+    }
+    
+    
+
+    if(b_PyCamDraw and b_Debug){
+        ofPushMatrix();ofPushStyle();
+        ofTranslate(ofGetWidth()/2, 200);
+        ofSetColor(255, 255, 255);
+        PyCamDepth.draw(0,                       0,              DEBUG_CANVAS_W, DEBUG_CANVAS_H);
+        depthGrayCvImage.draw(DEBUG_CANVAS_W,    0,              DEBUG_CANVAS_W, DEBUG_CANVAS_H);
+        PyCamColor.draw(0,                       DEBUG_CANVAS_H, DEBUG_CANVAS_W, DEBUG_CANVAS_H);
+        PyCamColorBuffer.draw(DEBUG_CANVAS_W,    DEBUG_CANVAS_H, DEBUG_CANVAS_W, DEBUG_CANVAS_H);
+        grayImageResize.draw(DEBUG_CANVAS_W*2, 0, DEBUG_CANVAS_W/2, DEBUG_CANVAS_H/2);
+        ofPopStyle();ofPopMatrix();
+    }
+
+    objCountDown.draw();
+
+    if(i_WhiteFadeLevel){
+        ofPushMatrix();ofPushStyle();
+        ofEnableAlphaBlending();
+        ofSetColor(255, 255, 255, (int)( MIN(255,i_WhiteFadeLevel)  * 4 / 5));
+        ofFill();
+        ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
+        ofPopStyle();ofPopMatrix();
+        
+        if(i_WhiteFadeLevel > 255 and b_Captured){
+            ofPushMatrix();ofPushStyle();
+            ofEnableAlphaBlending();
+            ofSetColor(255, 255, 255, (int)( MIN(255,i_WhiteFadeLevel - 255) ));
+            //imgGrab.draw(ofGetWidth() / 2 - drawW/2 , drawY, drawW, drawH);
+            imgGrab.draw(drawX, drawY, drawW, drawH);
+            ofPopStyle();ofPopMatrix();
+            
+            if(b_QrUploaded){
+                ofSetColor(255, 255, 255);
+                imageQr.draw(ofGetWidth() * 3/ 4 - imageQr.getWidth()/2 , ofGetHeight()/2 - imageQr.getHeight()/2, imageQr.getWidth() ,imageQr.getHeight());
+            }
+        }
     }
     
     if(b_Debug){
-        ofPushStyle();
+        ofPushMatrix();ofPushStyle();
         string info = "FPS: "+ofToString(ofGetFrameRate(), 1);
         info += "\n";
         info += osc_message;
@@ -402,19 +449,11 @@ void testApp::draw() {
         ofDrawBitmapString(info, 20, 20);
         
         ofSetColor(255, 0, 0);
+        ofNoFill();
         ofDrawRectangle(drawX + drawW * p_frameLeft, drawY + drawH * p_frameTop, drawW * (p_frameRight - p_frameLeft), drawH * (p_frameBottom - p_frameTop));
-        ofPopStyle();
+        ofPopStyle();ofPopMatrix();
     }
-    
-    gui.draw();
-    
-    if(b_PyCamDraw){
-        ofSetColor(255, 255, 255);
-        grayImageResize.draw(ofGetWidth()/2,0);
-        PyCamDepth.draw(ofGetWidth()/2,480,360,480);
-        PyCamColor.draw(ofGetWidth()/2+360,480,360,480);
-        depthGrayCvImage.draw(ofGetWidth()/2+360,0,360,480);
-    }
+    if(b_Debug)gui.draw();
 }
 
 
@@ -443,6 +482,11 @@ void testApp::keyPressed(int key) {
             m.setAddress( "/kill" );
             sender.sendMessage( m );
             break;
+        case 'm':
+            PyCamColorBuffer = PyCamColor;
+            clearAvoidImage();
+            makeAvoidImage();
+            break;
         case 'a':
             avoidRemove();
             break;
@@ -459,7 +503,19 @@ void testApp::keyPressed(int key) {
             b_GrabScreen = true;
             break;
         case OF_KEY_RETURN:
-            b_Auto = !b_Auto;
+            //b_Auto = !b_Auto;
+            switch(sequence.getIdNow()){
+                case AID_IDLE:
+                    sequence.interrupt(10);
+                    //sequence.interrupt(25);
+                    break;
+                case AID_WAITING:
+                    sequence.interrupt(20);
+                    break;
+                case AID_RESULT_SHOW_WAIT:
+                    sequence.interrupt(30);
+                    break;
+            }
             break;
         case ' ':
             b_AutoBorn = !b_AutoBorn;
@@ -509,6 +565,41 @@ void testApp::keyPressed(int key) {
             }
             
             break;
+    }
+}
+
+void testApp::clearAvoidImage(){
+    int edgeNum = avoidEdges.size();
+    for(int i=0;i < edgeNum ;i++){
+        avoidEdges[edgeNum - 1 - i].get()->destroy();
+        avoidEdges.pop_back();
+    }
+}
+
+void testApp::makeAvoidImage(){
+    float w = depthGrayCvImage.getWidth();
+    float h = depthGrayCvImage.getHeight();
+    grayImageResize.allocate(w, h);
+    
+    grayImage.allocate(w,h);
+
+    grayImageResize = depthGrayCvImage;
+    grayImage = depthGrayCvImage;
+    grayImage.resize(drawW, drawH);
+    grayImageResize.resize(drawW/CONT_RESIZE, drawH/CONT_RESIZE);
+    grayImageResize.threshold(10);
+    contourFinder.findContours(grayImageResize, 20,
+                               ( (drawW/CONT_RESIZE) * (drawH/CONT_RESIZE))/3, 10, true);
+    ofPoint pointBuf;
+    pointBuf.set(drawX, drawY);
+    for(int i = 0; i< contourFinder.nBlobs; i++){
+        shared_ptr <ofxBox2dEdge> edge = shared_ptr<ofxBox2dEdge>(new ofxBox2dEdge);
+        for(int j = 0; j<contourFinder.blobs[i].pts.size(); j++){
+            edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[j] * CONT_RESIZE);
+        }
+        edge.get()->addVertex( pointBuf + contourFinder.blobs[i].pts[0] * CONT_RESIZE);
+        edge.get()->create(box2d.getWorld());
+        avoidEdges.push_back(edge);
     }
 }
 
@@ -622,23 +713,46 @@ void testApp::setupSequence(){
      AID_EDIT,
      AID_RESULT_SHOW,
      AID_GOODBYE,
+     AID_IDLE,
      */
-    sequence.pushData(ofxFragment(1,AID_INIT,2));
-    sequence.pushData(ofxFragment(2,AID_WAITING,3));
-    sequence.pushData(ofxFragment(3,AID_COUNT_3,1));
-    sequence.pushData(ofxFragment(4,AID_COUNT_2,1));
-    sequence.pushData(ofxFragment(5,AID_COUNT_1,1));
-    sequence.pushData(ofxFragment(6,AID_SHOOT,1,2));
-    sequence.pushData(ofxFragment(7,AID_EDIT,1,2));
-    sequence.pushData(ofxFragment(8,AID_RESULT_SHOW,3));
-    sequence.pushData(ofxFragment(9,2,AID_GOODBYE,3));
-    
+    sequence.pushData(ofxFragment(1,AID_INIT,1));
+    sequence.pushData(ofxFragment(2,2,AID_IDLE,1));
+    sequence.pushData(ofxFragment(10,10,AID_WAITING,3));
+    sequence.pushData(ofxFragment(20,AID_COUNT_3,1));
+    sequence.pushData(ofxFragment(21,AID_COUNT_2,1));
+    sequence.pushData(ofxFragment(22,AID_COUNT_1,1));
+    sequence.pushData(ofxFragment(23,AID_SHOOT,2));
+    sequence.pushData(ofxFragment(24,AID_EDIT,6));
+    sequence.pushData(ofxFragment(25,AID_RESULT_CAPTURE,1,1));
+    sequence.pushData(ofxFragment(26,AID_RESULT_SHOW,7));//kokode QR show
+    sequence.pushData(ofxFragment(27,27,AID_RESULT_SHOW_WAIT,3));
+    sequence.pushData(ofxFragment(30,10,AID_GOODBYE,1));
     
     sequence.setup();
     sequence.play();
 }
 
 void testApp::updateSequence(){
+
+    switch(sequence.getIdNow()){
+        case AID_IDLE:
+            break;
+        case AID_WAITING:
+            break;
+        case AID_SHOOT:
+            if(i_WhiteFadeLevel>255)box2d.update();
+            i_WhiteFadeLevel = i_WhiteFadeLevel + 10;
+            break;
+        case AID_EDIT:
+            box2d.update();
+            i_WhiteFadeLevel = i_WhiteFadeLevel + 10;
+            break;
+        case AID_RESULT_SHOW:
+            //i_WhiteFadeLevel = MIN(255, i_WhiteFadeLevel + 10);
+            i_WhiteFadeLevel = i_WhiteFadeLevel + 10;
+            break;
+    }
+
     if(sequence.getChanged()){
         int param;
         param = sequence.getParamNow();
@@ -646,21 +760,59 @@ void testApp::updateSequence(){
         switch(sequence.getIdNow()){
             case AID_INIT:
                 break;
+            case AID_IDLE:
+                break;
             case AID_WAITING:
+                b_QrUploaded = false;
+                b_Captured = false;
+                b_CapturedOnce = false;
+                b_Debug = false;
                 break;
             case AID_COUNT_3:
+                objCountDown.set(3);
                 break;
             case AID_COUNT_2:
+                objCountDown.set(2);
                 break;
             case AID_COUNT_1:
+                objCountDown.set(1);
                 break;
             case AID_SHOOT:
+                objCountDown.set(0);
+                PyCamColorBuffer = PyCamColor;
+                clearAvoidImage();
+                makeAvoidImage();
+                b_AutoBorn = true;
+                i_ParticlesSum = 0;
                 break;
             case AID_EDIT:
+                avoidRemove();
                 break;
+            case AID_RESULT_CAPTURE:
+                b_GrabScreen = true;
             case AID_RESULT_SHOW:
                 break;
+            case AID_RESULT_SHOW_WAIT:
+                break;
             case AID_GOODBYE:
+                i_WhiteFadeLevel = 0;
+                
+                for(int i = 0;i < v_particles.size();i++){
+                    int particlesNum = v_particles[i].size();
+                    for(int j = 0;j< particlesNum ; j++){
+                        v_particles[i][particlesNum - 1 - j].get()->destroy();
+                        v_particles[i].pop_back();
+                    }
+                    v_particles[i].clear();
+                }
+                for(int i = 0;i < v_particlesPoly.size();i++){
+                    int particlesNum = v_particlesPoly[i].size();
+                    for(int j = 0;j< particlesNum ; j++){
+                        v_particlesPoly[i][particlesNum - 1 - j].get()->polyShape.destroy();
+                        v_particlesPoly[i].pop_back();
+                    }
+                    v_particlesPoly[i].clear();
+                }
                 break;
         }
     }
@@ -678,6 +830,9 @@ void testApp::updateOSC(){
             str = m.getArgAsString( 0 );
             cout <<"[OSC] got QR code path" << str <<endl;
             osc_message = "[OSC] got QR code path" + str;
+            b_QrUploaded = true;
+            imageQr.load(str);
+            
         }
         if ( m.getAddress() == "/status" ){
             string str;
@@ -691,8 +846,8 @@ void testApp::updateOSC(){
             b_StartPyCam = true;
         }
         if ( m.getAddress() == "/cam/got" ){
-            cout <<"[OSC] got cam data" <<endl;
-            osc_message = "[OSC] got cam data";
+            //cout <<"[OSC] got cam data" <<endl;
+            //osc_message = "[OSC] got cam data";
             b_WaitCamReply = false;
             PyCamColor.load("color.png");
             PyCamDepth.load("depth.png");

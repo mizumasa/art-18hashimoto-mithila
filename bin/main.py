@@ -180,6 +180,11 @@ class PyModule:
 
 	def kill(self, addr, tags, stuff, source):
 		self.flag = False
+		try:
+			self.pipeline.stop()
+			print "[PY] stop pyrealsense"
+		except:
+			print "[PY] error stop pyrealsense"
 		print "---"
 		print "received new osc msg from %s" % OSC.getUrlStr(source)
 		print "with addr : %s" % addr
