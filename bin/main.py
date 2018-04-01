@@ -27,6 +27,8 @@ SEND_ADDRESS = '127.0.0.1', OSC_PORT_PY2OF
 RECV_ADDRESS = '127.0.0.1', OSC_PORT_OF2PY
 
 FILEBASE = "/Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/data/"
+if not os.path.isdir(FILEBASE):
+	FILEBASE = "/Users/isuca/programing/of_v0.9.8/apps/myApps/art-18hashimoto-mithila/bin/data/"
 
 DIR_NAME = os.path.dirname(os.path.abspath(__file__))
 
