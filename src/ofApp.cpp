@@ -420,7 +420,7 @@ void testApp::draw() {
         ofPopStyle();ofPopMatrix();
     }
 
-    objCountDown.draw();
+    if(!b_Debug)objCountDown.draw();
 
     if(i_WhiteFadeLevel){
         ofPushMatrix();ofPushStyle();
