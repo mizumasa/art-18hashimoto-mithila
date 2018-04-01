@@ -15,10 +15,11 @@
 enum ACT_ID{
     AID_INIT = 0,
     AID_WAITING,
+    AID_COUNT_4,
     AID_COUNT_3,
     AID_COUNT_2,
     AID_COUNT_1,
-    AID_SHOOT,//5
+    AID_SHOOT,//6
     AID_EDIT,
     AID_RESULT_CAPTURE,
     AID_RESULT_SHOW,

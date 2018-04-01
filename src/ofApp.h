@@ -163,6 +163,7 @@ public:
     ofxFloatSlider p_frameBottom;
     ofxIntSlider p_DepthMin;
     ofxIntSlider p_DepthMax;
+    ofxIntSlider p_ReactThr;
 
     ofImage inputCam;
     ofImage cropCam;
@@ -214,6 +215,8 @@ public:
     int i_WhiteFadeLevel;
     bool b_QrUploaded;
     ofImage imageQr;
+    ofImage imageInstaRecommend;
+    bool b_Demo;
 };
 
 

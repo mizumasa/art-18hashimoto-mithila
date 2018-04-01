@@ -35,6 +35,9 @@ import qrcode
 #import pyperclip
 client_id = 'd2b14e2d0051120'
 client_secret = 'c354854c2797da7b7814013360bd730ff805e3af'
+
+client_id = '8392a2213cdd164'
+client_secret = 'aa081996aaa52a6d2682cc3a495b0b03e4da51bb'
 client = ImgurClient(client_id, client_secret)
 
 
@@ -42,7 +45,11 @@ def uploadImgur(filename):
 	filepath = os.path.join(FILEBASE,filename)
 	if os.path.exists(filepath):
 		print "[PY] exec",filename
-		res = client.upload_from_path(filepath)
+		try:
+			res = client.upload_from_path(filepath)
+		except:
+			print "[PY] imgur upload error"
+			return "none"
 		print "[PY] imgur upload finihsed",filename
 		#print "[PY] fileUrl",res
 		if "link" in res.keys():
@@ -136,9 +143,14 @@ class PyModule:
 		print "typetags %s" % tags
 		print "data %s" % stuff
 		filename = stuff[0]
+		qrname = uploadImgur(filename)
+		if(qrname == "none"):
+			msg2 = OSC.OSCMessage()
+			msg2.setAddress("/image/uploaderror")
+			msg2.append(qrname)
+			self.c.send(msg2)
 		msg = OSC.OSCMessage()
 		msg.setAddress("/image/uploaded")
-		qrname = uploadImgur(filename)
 		msg.append(qrname)
 		self.c.send(msg)
 		return

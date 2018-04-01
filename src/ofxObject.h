@@ -90,6 +90,15 @@ public:
                 polyShape.addVertex(ofPoint(cx + (r * 0.26), cy + (r * 1)));
                 polyShape.addVertex(ofPoint(cx + (r * -0.1), cy + (r * 1.02)));
                 break;
+            case 3:
+                polyShape.addVertex(ofPoint(cx + (r * -0.96), cy + (r * -0.28)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.68), cy + (r * -0.62)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.9), cy + (r * -0.36)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.98), cy + (r * 0.18)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.74), cy + (r * 0.5)));
+                polyShape.addVertex(ofPoint(cx + (r * 0.04), cy + (r * 0.72)));
+                polyShape.addVertex(ofPoint(cx + (r * -0.6), cy + (r * 0.36)));
+                break;
         }
         polyShape.setPhysics(1.0 / radius , 0.1, 0.1);
         polyShape.create(world.getWorld());
@@ -153,13 +162,15 @@ public:
     countDown() {
     }
     void setup(){
-        ofImage buf1, buf2, buf3;
+        ofImage buf1, buf2, buf3, buf4;
         buf1.load("1.png");
         buf2.load("2.png");
         buf3.load("3.png");
+        buf4.load("4.png");
         v_Image.push_back(buf1);
         v_Image.push_back(buf2);
         v_Image.push_back(buf3);
+        v_Image.push_back(buf4);
     }
     void set(int i){
         i_NowId = i;

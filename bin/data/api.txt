@@ -1,9 +1,21 @@
-Client ID:
+how to add app
 
-d2b14e2d0051120
-Client secret:
+橋本さん個展
+imgur アカウント
+mizuochihashimoto mizuochihashimoto0401
 
-c354854c2797da7b7814013360bd730ff805e3af
+https://api.imgur.com/oauth2/addclient
+
+
+Client ID:d2b14e2d0051120
+Client secret:c354854c2797da7b7814013360bd730ff805e3af
+
+
+client_id = '8392a2213cdd164'
+client_secret = 'aa081996aaa52a6d2682cc3a495b0b03e4da51bb'
+
+how to add imager
+
 
 
 

@@ -1,20 +1,22 @@
 #include "ofApp.h"
 
-int TEXTURE_SIZE[3][3] = {
+int TEXTURE_SIZE[4][3] = {
+    {25,30,0},
     {25,30,0},
     {25,30,0},
     {55,60,1}
 };
 #define TEXTURE_RAND_SIZE 7
-int TEXTURE_RAND[TEXTURE_RAND_SIZE] = {0,0,0,1,1,1,2};
+int TEXTURE_RAND[TEXTURE_RAND_SIZE] = {0,0,1,1,2,2,3};
 
-int TEXTURE_POLY_SIZE[3][3] = {
+int TEXTURE_POLY_SIZE[4][3] = {
     {30,35,1},
     {40,45,1},
+    {30,35,1},
     {30,35,1}
 };
-#define TEXTURE_POLY_RAND_SIZE 5
-int TEXTURE_POLY_RAND[TEXTURE_POLY_RAND_SIZE] = {0,0,1,1,2};
+#define TEXTURE_POLY_RAND_SIZE 4
+int TEXTURE_POLY_RAND[TEXTURE_POLY_RAND_SIZE] = {0,1,2,3};
 
 
 
@@ -92,6 +94,7 @@ void testApp::setup() {
     gui.add(p_frameBottom.setup("p_frameBottom", 0.5, 0, 1.0));
     gui.add(p_DepthMin.setup("p_DepthMin", 7, 0, 255));
     gui.add(p_DepthMax.setup("p_DepthMax", 28, 0, 255));
+    gui.add(p_ReactThr.setup("p_ReactThr", 10, 0, 100));
     gui.setPosition(ofGetWidth()/2, 0);
     
     // load the lines we saved...
@@ -158,6 +161,8 @@ void testApp::setup() {
     b_PyCamDraw = false;
     objCountDown.setup();
     i_WhiteFadeLevel = 0;
+    imageInstaRecommend.load("insta.png");
+    b_Demo = false;
 }
 
 //--------------------------------------------------------------
@@ -420,9 +425,9 @@ void testApp::draw() {
     if(i_WhiteFadeLevel){
         ofPushMatrix();ofPushStyle();
         ofEnableAlphaBlending();
-        ofSetColor(255, 255, 255, (int)( MIN(255,i_WhiteFadeLevel)  * 4 / 5));
+        ofSetColor(255, 255, 255, (int)( MIN(255,i_WhiteFadeLevel)));
         ofFill();
-        ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
+        if(!b_Demo)ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
         ofPopStyle();ofPopMatrix();
         
         if(i_WhiteFadeLevel > 255 and b_Captured){
@@ -435,7 +440,9 @@ void testApp::draw() {
             
             if(b_QrUploaded){
                 ofSetColor(255, 255, 255);
-                imageQr.draw(ofGetWidth() * 3/ 4 - imageQr.getWidth()/2 , ofGetHeight()/2 - imageQr.getHeight()/2, imageQr.getWidth() ,imageQr.getHeight());
+                imageQr.draw(ofGetWidth() * 3/ 4 - imageQr.getWidth() , ofGetHeight()/2 - imageQr.getHeight()/2, imageQr.getWidth() ,imageQr.getHeight());
+                
+                imageInstaRecommend.draw(ofGetWidth() * 3/ 4 , ofGetHeight()/2 - imageQr.getHeight()/2, imageQr.getWidth() ,imageQr.getHeight());
             }
         }
     }
@@ -461,6 +468,12 @@ void testApp::draw() {
 void testApp::keyPressed(int key) {
     ofxOscMessage m;
     switch(key){
+        case '8':
+            b_Demo = !b_Demo;
+            break;
+        case '9':
+            sequence.interrupt(30);
+            break;
         case 'e':
             if(b_Edit){
                 for(int i =0;i<vvf_EditLog.size();i++){
@@ -502,17 +515,29 @@ void testApp::keyPressed(int key) {
         case 's':
             b_GrabScreen = true;
             break;
+        case '0':
+            switch(sequence.getIdNow()){
+                case AID_RESULT_SHOW_WAIT:
+                    sequence.interrupt(30);
+                    break;
+            }
+            break;
         case OF_KEY_RETURN:
             //b_Auto = !b_Auto;
             switch(sequence.getIdNow()){
                 case AID_IDLE:
+                    b_Debug = false;
                     sequence.interrupt(10);
                     //sequence.interrupt(25);
+                    break;
+                case AID_COUNT_4:
+                    sequence.interrupt(21);
                     break;
                 case AID_WAITING:
                     sequence.interrupt(20);
                     break;
                 case AID_RESULT_SHOW_WAIT:
+                    imgGrab.save("open"+filenameCapture);
                     sequence.interrupt(30);
                     break;
             }
@@ -580,9 +605,27 @@ void testApp::makeAvoidImage(){
     float w = depthGrayCvImage.getWidth();
     float h = depthGrayCvImage.getHeight();
     grayImageResize.allocate(w, h);
-    
     grayImage.allocate(w,h);
-
+    
+    
+    //paste frame avoid
+    ofPixels pixBuf;
+    pixBuf = depthGrayCvImage.getPixels();
+    unsigned char * charBuf;
+    charBuf = pixBuf.getData();
+    float posX,posY;
+    for(int i=0;i<h;i++){
+        for(int j=0;j<w;j++){
+            posY = 1. * i / h;
+            posX = 1. * j / w;
+            if( p_frameTop <= posY and posY <= p_frameBottom and  p_frameLeft <= posX and posX <= p_frameRight ){
+                charBuf[(int)(i*w+j)] = 255;
+            }
+        }
+    }
+    depthGrayCvImage.setFromPixels(charBuf, w, h);
+    
+    
     grayImageResize = depthGrayCvImage;
     grayImage = depthGrayCvImage;
     grayImage.resize(drawW, drawH);
@@ -718,14 +761,15 @@ void testApp::setupSequence(){
     sequence.pushData(ofxFragment(1,AID_INIT,1));
     sequence.pushData(ofxFragment(2,2,AID_IDLE,1));
     sequence.pushData(ofxFragment(10,10,AID_WAITING,3));
-    sequence.pushData(ofxFragment(20,AID_COUNT_3,1));
-    sequence.pushData(ofxFragment(21,AID_COUNT_2,1));
-    sequence.pushData(ofxFragment(22,AID_COUNT_1,1));
-    sequence.pushData(ofxFragment(23,AID_SHOOT,2));
-    sequence.pushData(ofxFragment(24,AID_EDIT,6));
-    sequence.pushData(ofxFragment(25,AID_RESULT_CAPTURE,1,1));
-    sequence.pushData(ofxFragment(26,AID_RESULT_SHOW,7));//kokode QR show
-    sequence.pushData(ofxFragment(27,27,AID_RESULT_SHOW_WAIT,3));
+    sequence.pushData(ofxFragment(20,20,AID_COUNT_4,1));
+    sequence.pushData(ofxFragment(21,AID_COUNT_3,1));
+    sequence.pushData(ofxFragment(22,AID_COUNT_2,1));
+    sequence.pushData(ofxFragment(23,AID_COUNT_1,1));
+    sequence.pushData(ofxFragment(24,AID_SHOOT,2));
+    sequence.pushData(ofxFragment(25,AID_EDIT,6));
+    sequence.pushData(ofxFragment(26,AID_RESULT_CAPTURE,1,1));
+    sequence.pushData(ofxFragment(27,AID_RESULT_SHOW,3));//kokode QR show
+    sequence.pushData(ofxFragment(28,30,AID_RESULT_SHOW_WAIT,10));
     sequence.pushData(ofxFragment(30,10,AID_GOODBYE,1));
     
     sequence.setup();
@@ -733,11 +777,19 @@ void testApp::setupSequence(){
 }
 
 void testApp::updateSequence(){
+    int i_CountDepthNonZero;
 
     switch(sequence.getIdNow()){
         case AID_IDLE:
             break;
         case AID_WAITING:
+            i_CountDepthNonZero = depthGrayCvImage.countNonZeroInRegion(0, 0, depthGrayCvImage.getWidth(), depthGrayCvImage.getHeight());
+            if(i_CountDepthNonZero > 0){
+                cout<<"[DEPTH] count depth Image:" << i_CountDepthNonZero <<"act more than "<<p_ReactThr * 1000 <<endl;
+                if(i_CountDepthNonZero > (p_ReactThr * 1000)){
+                    sequence.interrupt(20);
+                }
+            }
             break;
         case AID_SHOOT:
             if(i_WhiteFadeLevel>255)box2d.update();
@@ -766,7 +818,9 @@ void testApp::updateSequence(){
                 b_QrUploaded = false;
                 b_Captured = false;
                 b_CapturedOnce = false;
-                b_Debug = false;
+                break;
+            case AID_COUNT_4:
+                objCountDown.set(4);
                 break;
             case AID_COUNT_3:
                 objCountDown.set(3);
@@ -795,6 +849,7 @@ void testApp::updateSequence(){
             case AID_RESULT_SHOW_WAIT:
                 break;
             case AID_GOODBYE:
+                objCountDown.set(0);
                 i_WhiteFadeLevel = 0;
                 
                 for(int i = 0;i < v_particles.size();i++){
@@ -832,7 +887,12 @@ void testApp::updateOSC(){
             osc_message = "[OSC] got QR code path" + str;
             b_QrUploaded = true;
             imageQr.load(str);
-            
+        }
+        if ( m.getAddress() == "/image/uploaderror" ){
+            string str;
+            str = m.getArgAsString( 0 );
+            cout <<"[OSC] imgur upload error" << str <<endl;
+            osc_message = "[OSC] imgur upload error" + str;
         }
         if ( m.getAddress() == "/status" ){
             string str;
