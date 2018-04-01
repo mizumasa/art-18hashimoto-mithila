@@ -22,8 +22,10 @@ int TEXTURE_POLY_RAND[TEXTURE_POLY_RAND_SIZE] = {0,1,2,3};
 
 //--------------------------------------------------------------
 void testApp::setup() {
-    if(USE_PYTHON)system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
-	//ofBackgroundHex(0xfdefc2);
+    ofDirectory dirBin1("/Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin");
+    if(dirBin1.exists() and USE_PYTHON)system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
+    ofDirectory dirBin2("/Users/isuca/programing/of_v0.9.8/apps/myApps/art-18hashimoto-mithila/bin");
+    if(dirBin2.exists() and USE_PYTHON)system("/usr/local/bin/python /Users/isuca/programing/of_v0.9.8/apps/myApps/art-18hashimoto-mithila/bin/main.py &");	//ofBackgroundHex(0xfdefc2);
     ofBackgroundHex(0xffffff);
     ofSetLogLevel(OF_LOG_NOTICE);
 	ofSetVerticalSync(true);
@@ -88,12 +90,12 @@ void testApp::setup() {
 #endif
     
     gui.setup();
-    gui.add(p_frameLeft.setup("p_frameLeft", 0.3, 0, 1.0));
-    gui.add(p_frameTop.setup("p_frameTop", 0.3, 0, 1.0));
-    gui.add(p_frameRight.setup("p_frameRight", 0.5, 0, 1.0));
-    gui.add(p_frameBottom.setup("p_frameBottom", 0.5, 0, 1.0));
-    gui.add(p_DepthMin.setup("p_DepthMin", 7, 0, 255));
-    gui.add(p_DepthMax.setup("p_DepthMax", 28, 0, 255));
+    gui.add(p_frameLeft.setup("p_frameLeft", 0.525, 0, 1.0));
+    gui.add(p_frameTop.setup("p_frameTop", 0.315, 0, 1.0));
+    gui.add(p_frameRight.setup("p_frameRight", 0.69, 0, 1.0));
+    gui.add(p_frameBottom.setup("p_frameBottom", 0.485, 0, 1.0));
+    gui.add(p_DepthMin.setup("p_DepthMin", 33, 0, 255));
+    gui.add(p_DepthMax.setup("p_DepthMax", 85, 0, 255));
     gui.add(p_ReactThr.setup("p_ReactThr", 10, 0, 100));
     gui.setPosition(ofGetWidth()/2, 0);
     
