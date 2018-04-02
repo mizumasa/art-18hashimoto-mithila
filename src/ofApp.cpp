@@ -22,6 +22,7 @@ int TEXTURE_POLY_RAND[TEXTURE_POLY_RAND_SIZE] = {0,1,2,3};
 
 //--------------------------------------------------------------
 void testApp::setup() {
+    ofHideCursor();
     ofDirectory dirBin1("/Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin");
     if(dirBin1.exists() and USE_PYTHON)system("/usr/local/bin/python /Users/sapugc/programming/of_v0.9.8_osx/apps/Art2018/MithilaPainting/bin/main.py &");
     ofDirectory dirBin2("/Users/isuca/programing/of_v0.9.8/apps/myApps/art-18hashimoto-mithila/bin");
@@ -596,6 +597,11 @@ void testApp::keyPressed(int key) {
             break;
         case 'd':
             b_Debug = !b_Debug;
+            if(b_Debug){
+                ofShowCursor();
+            }else{
+                ofHideCursor();
+            }
             for(int i=0; i<v_particles.size(); i++) {
                 for(int j=0; j<v_particles[i].size(); j++) {
                     v_particles[i][j]->b_Debug = b_Debug;
