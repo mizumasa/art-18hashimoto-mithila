@@ -90,6 +90,11 @@ void testApp::setup() {
 #endif
     
     gui.setup();
+    gui.add(p_IgnoreLeft.setup("p_IgnoreLeft", 0.1, 0, 1.0));
+    gui.add(p_IgnoreTop.setup("p_IgnoreTop", 0.1, 0, 1.0));
+    gui.add(p_IgnoreRight.setup("p_IgnoreRight", 0.0, 0, 1.0));
+    gui.add(p_IgnoreBottom.setup("p_IgnoreBottom", 0.2, 0, 1.0));
+    
     gui.add(p_frameLeft.setup("p_frameLeft", 0.525, 0, 1.0));
     gui.add(p_frameTop.setup("p_frameTop", 0.315, 0, 1.0));
     gui.add(p_frameRight.setup("p_frameRight", 0.69, 0, 1.0));
@@ -163,6 +168,7 @@ void testApp::setup() {
     b_PyCamDraw = false;
     objCountDown.setup();
     i_WhiteFadeLevel = 0;
+    imageTitle.load("title.png");
     imageInstaRecommend.load("insta.png");
     b_Demo = false;
 }
@@ -373,7 +379,7 @@ void testApp::draw() {
     ofPopStyle();ofPopMatrix();
 
     ofPushMatrix();ofPushStyle();
-    if(!b_Debug){
+    if(!b_Debug and !b_Demo){
         ofFill();
         ofSetColor(255, 255, 255);
         ofDrawRectangle(-ofGetWidth() / 2, 0, drawX+ ofGetWidth() / 2, ofGetHeight());
@@ -381,6 +387,12 @@ void testApp::draw() {
         ofDrawRectangle(drawX+drawW, 0, drawX + ofGetWidth() / 2, ofGetHeight());
         ofDrawRectangle(0, drawY+drawH, ofGetWidth() / 2, drawY);
     }
+    if(!b_Debug and b_Demo){
+        ofFill();
+        ofSetColor(255, 255, 255);
+        ofDrawRectangle(ofGetWidth() / 2, 0, ofGetWidth() / 2, ofGetHeight());
+    }
+    
     ofPopStyle();ofPopMatrix();
 
     ofPushMatrix();ofPushStyle();
@@ -448,6 +460,9 @@ void testApp::draw() {
             }
         }
     }
+    if(sequence.getIdNow() == AID_WAITING){
+        imageTitle.draw(ofGetWidth() * 3/ 4 - imageTitle.getWidth()/2 , ofGetHeight()/2 - imageTitle.getHeight()/2, imageTitle.getWidth() ,imageTitle.getHeight());
+    }
     
     if(b_Debug){
         ofPushMatrix();ofPushStyle();
@@ -460,6 +475,14 @@ void testApp::draw() {
         ofSetColor(255, 0, 0);
         ofNoFill();
         ofDrawRectangle(drawX + drawW * p_frameLeft, drawY + drawH * p_frameTop, drawW * (p_frameRight - p_frameLeft), drawH * (p_frameBottom - p_frameTop));
+        
+        ofDrawRectangle(drawX + drawW * p_IgnoreLeft, drawY + drawH * p_IgnoreTop, drawW * (p_IgnoreRight - p_IgnoreLeft), drawH * (p_IgnoreBottom - p_IgnoreTop));
+        
+        /*ofDrawLine(drawX + drawW * p_IgnoreLeft, drawY, drawX + drawW * p_IgnoreLeft, drawY+drawH);
+        ofDrawLine(drawX + drawW * (1.0 - p_IgnoreRight), drawY, drawX + drawW * (1.0 - p_IgnoreRight), drawY+drawH);
+        ofDrawLine(drawX, drawY + drawH * p_IgnoreTop, drawX + drawW, drawY + drawH * p_IgnoreTop);
+        ofDrawLine(drawX, drawY + drawH * (1.0 - p_IgnoreBottom), drawX + drawW, drawY + drawH * (1.0 - p_IgnoreBottom));*/
+        
         ofPopStyle();ofPopMatrix();
     }
     if(b_Debug)gui.draw();
@@ -622,6 +645,9 @@ void testApp::makeAvoidImage(){
             posX = 1. * j / w;
             if( p_frameTop <= posY and posY <= p_frameBottom and  p_frameLeft <= posX and posX <= p_frameRight ){
                 charBuf[(int)(i*w+j)] = 255;
+            }
+            if( p_IgnoreTop >= posY and posY >= p_IgnoreBottom and  p_IgnoreLeft >= posX and posX >= p_IgnoreRight ){
+                charBuf[(int)(i*w+j)] = 0;
             }
         }
     }

@@ -161,6 +161,10 @@ public:
     ofxFloatSlider p_frameTop;
     ofxFloatSlider p_frameRight;
     ofxFloatSlider p_frameBottom;
+    ofxFloatSlider p_IgnoreLeft;
+    ofxFloatSlider p_IgnoreTop;
+    ofxFloatSlider p_IgnoreRight;
+    ofxFloatSlider p_IgnoreBottom;
     ofxIntSlider p_DepthMin;
     ofxIntSlider p_DepthMax;
     ofxIntSlider p_ReactThr;
@@ -214,6 +218,7 @@ public:
     countDown objCountDown;
     int i_WhiteFadeLevel;
     bool b_QrUploaded;
+    ofImage imageTitle;
     ofImage imageQr;
     ofImage imageInstaRecommend;
     bool b_Demo;
