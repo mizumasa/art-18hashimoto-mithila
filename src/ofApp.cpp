@@ -92,8 +92,8 @@ void testApp::setup() {
     gui.setup();
     gui.add(p_IgnoreLeft.setup("p_IgnoreLeft", 0.1, 0, 1.0));
     gui.add(p_IgnoreTop.setup("p_IgnoreTop", 0.1, 0, 1.0));
-    gui.add(p_IgnoreRight.setup("p_IgnoreRight", 0.0, 0, 1.0));
-    gui.add(p_IgnoreBottom.setup("p_IgnoreBottom", 0.2, 0, 1.0));
+    gui.add(p_IgnoreRight.setup("p_IgnoreRight", 0.9, 0, 1.0));
+    gui.add(p_IgnoreBottom.setup("p_IgnoreBottom", 0.9, 0, 1.0));
     
     gui.add(p_frameLeft.setup("p_frameLeft", 0.525, 0, 1.0));
     gui.add(p_frameTop.setup("p_frameTop", 0.315, 0, 1.0));
@@ -102,6 +102,7 @@ void testApp::setup() {
     gui.add(p_DepthMin.setup("p_DepthMin", 33, 0, 255));
     gui.add(p_DepthMax.setup("p_DepthMax", 85, 0, 255));
     gui.add(p_ReactThr.setup("p_ReactThr", 10, 0, 100));
+    gui.add(p_ParticleMax.setup("p_ParticleMax",30,10,40));
     gui.setPosition(ofGetWidth()/2, 0);
     
     // load the lines we saved...
@@ -168,9 +169,12 @@ void testApp::setup() {
     b_PyCamDraw = false;
     objCountDown.setup();
     i_WhiteFadeLevel = 0;
-    imageTitle.load("title.png");
+    imageTitle.load("description.png");
     imageInstaRecommend.load("insta.png");
     b_Demo = false;
+    i_SecCount = 0;
+    i_SecCountBuf = 0;
+
 }
 
 //--------------------------------------------------------------
@@ -204,7 +208,7 @@ void testApp::update() {
             v_particlesPoly[texturePolyIdx].push_back(pPoly);
             i_ParticlesSum += (int)(radiusPolyBuf * radiusPolyBuf);
             
-            if(i_ParticlesSum > PARTICLE_MAX){
+            if(i_ParticlesSum > p_ParticleMax * 100000){
             //if(i_ParticlesSum > 3000){
                 b_AutoBorn = false;
             }
@@ -266,7 +270,7 @@ void testApp::update() {
         b_CapturedOnce = false;
         ofxOscMessage m;
         m.setAddress( "/image/saved" );
-        m.addStringArg(filenameCapture);
+        m.addStringArg("capture/"+filenameCapture);
         sender.sendMessage( m );
     }
     
@@ -317,6 +321,13 @@ void testApp::update() {
     }
     }
     
+    if(i_WhiteFadeLevel >= 255 and !b_Demo and (sequence.getIdNow() == AID_EDIT)){
+        if((ofGetElapsedTimeMillis() / 1000) > i_SecCountBuf){
+            i_SecCountBuf = (int)(ofGetElapsedTimeMillis() / 1000);
+            i_SecCount ++;
+        }
+    }
+    
 
 }
 
@@ -325,7 +336,10 @@ void testApp::update() {
 
 //--------------------------------------------------------------
 void testApp::draw() {
-    
+    ofBackground(255,255,255);
+    if(b_Demo){
+        ofBackground(0, 0, 0);
+    }
     ofSetHexColor(0xffffff);
     
     //inputCam.draw(0, 0, 320, 180);
@@ -412,8 +426,8 @@ void testApp::draw() {
         int s = ofGetSeconds();
         int m = ofGetMinutes();
         int h = ofGetHours();
-        string filename = "capture/screenshot_" + ofToString(mn, 0) + "_" + ofToString(d, 0) + "_" + ofToString(h, 0) + "_" + ofToString(m, 0) + "_" + ofToString(s, 0) +".png";
-        imgGrab.save(filename);
+        string filename = "screenshot_" + ofToString(mn, 0) + "_" + ofToString(d, 0) + "_" + ofToString(h, 0) + "_" + ofToString(m, 0) + "_" + ofToString(s, 0) +".png";
+        imgGrab.save("capture/"+filename);
         filenameCapture = filename;
         b_Captured = true;
         b_CapturedOnce = true;
@@ -444,6 +458,14 @@ void testApp::draw() {
         if(!b_Demo)ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
         ofPopStyle();ofPopMatrix();
         
+        ofPushMatrix();ofPushStyle();
+        if((i_SecCount > 1 ) and !b_Demo and (sequence.getIdNow() == AID_EDIT)){
+            ofSetColor(0, 0, 0);
+            ofFill();
+            ofDrawCircle(ofGetWidth()/2 + 60 * (i_SecCount - 3), ofGetHeight()/2, 30);
+        }
+        ofPopStyle();ofPopMatrix();
+
         if(i_WhiteFadeLevel > 255 and b_Captured){
             ofPushMatrix();ofPushStyle();
             ofEnableAlphaBlending();
@@ -562,7 +584,8 @@ void testApp::keyPressed(int key) {
                     sequence.interrupt(20);
                     break;
                 case AID_RESULT_SHOW_WAIT:
-                    imgGrab.save("open"+filenameCapture);
+                    imgGrab.save("opencapture/"+filenameCapture);
+                    imgGrab.save("/Users/isuca/Dropbox/hashimoto/"+filenameCapture);
                     sequence.interrupt(30);
                     break;
             }
@@ -646,7 +669,7 @@ void testApp::makeAvoidImage(){
             if( p_frameTop <= posY and posY <= p_frameBottom and  p_frameLeft <= posX and posX <= p_frameRight ){
                 charBuf[(int)(i*w+j)] = 255;
             }
-            if( p_IgnoreTop >= posY and posY >= p_IgnoreBottom and  p_IgnoreLeft >= posX and posX >= p_IgnoreRight ){
+            if( p_IgnoreTop >= posY or posY >= p_IgnoreBottom or  p_IgnoreLeft >= posX or posX >= p_IgnoreRight ){
                 charBuf[(int)(i*w+j)] = 0;
             }
         }
@@ -797,7 +820,7 @@ void testApp::setupSequence(){
     sequence.pushData(ofxFragment(25,AID_EDIT,6));
     sequence.pushData(ofxFragment(26,AID_RESULT_CAPTURE,1,1));
     sequence.pushData(ofxFragment(27,AID_RESULT_SHOW,3));//kokode QR show
-    sequence.pushData(ofxFragment(28,30,AID_RESULT_SHOW_WAIT,10));
+    sequence.pushData(ofxFragment(28,30,AID_RESULT_SHOW_WAIT,60));
     sequence.pushData(ofxFragment(30,10,AID_GOODBYE,1));
     
     sequence.setup();
@@ -837,6 +860,7 @@ void testApp::updateSequence(){
         int param;
         param = sequence.getParamNow();
         cout<<"[Sequence] "<<sequence.getIdNow()<<" :param "<<param<<endl;
+        string filename;
         switch(sequence.getIdNow()){
             case AID_INIT:
                 break;
@@ -862,6 +886,9 @@ void testApp::updateSequence(){
             case AID_SHOOT:
                 objCountDown.set(0);
                 PyCamColorBuffer = PyCamColor;
+                filename = "screenshot_" + ofToString(ofGetMonth(), 0) + "_" + ofToString(ofGetDay(), 0) + "_" + ofToString(ofGetHours(), 0) + "_" + ofToString(ofGetMinutes(), 0) + "_" + ofToString(ofGetSeconds(), 0) +".png";
+                PyCamColor.save("color/"+filename);
+                PyCamDepth.save("depth/"+filename);
                 clearAvoidImage();
                 makeAvoidImage();
                 b_AutoBorn = true;
@@ -879,7 +906,9 @@ void testApp::updateSequence(){
             case AID_GOODBYE:
                 objCountDown.set(0);
                 i_WhiteFadeLevel = 0;
-                
+                i_SecCount = 0;
+                i_SecCountBuf = 0;
+
                 for(int i = 0;i < v_particles.size();i++){
                     int particlesNum = v_particles[i].size();
                     for(int j = 0;j< particlesNum ; j++){

@@ -168,6 +168,7 @@ public:
     ofxIntSlider p_DepthMin;
     ofxIntSlider p_DepthMax;
     ofxIntSlider p_ReactThr;
+    ofxIntSlider p_ParticleMax;
 
     ofImage inputCam;
     ofImage cropCam;
@@ -222,6 +223,8 @@ public:
     ofImage imageQr;
     ofImage imageInstaRecommend;
     bool b_Demo;
+    int i_SecCountBuf;
+    int i_SecCount;
 };
 
 
