@@ -42,6 +42,10 @@ client_id = '8392a2213cdd164'
 client_secret = 'aa081996aaa52a6d2682cc3a495b0b03e4da51bb'
 client = ImgurClient(client_id, client_secret)
 
+depth8bit_log1 = 0
+depth8bit_log2 = 0
+depth8bit_count = 0
+
 
 def uploadImgur(filename):
 	filepath = os.path.join(FILEBASE,filename)
@@ -178,7 +182,21 @@ class PyModule:
 		
 		depth8bit = cv2.convertScaleAbs(depth_image[:,160:1120], alpha=0.03)
 		depth8bit = np.rot90(depth8bit,3)
-		cv2.imwrite(os.path.join(DIR_NAME, "data/depth.png"), depth8bit)
+		global depth8bit_log1
+		global depth8bit_log2
+		global depth8bit_count
+
+		if(type(depth8bit_log1) != type(1)):
+			depth8bit_log2 = depth8bit_log1.copy()
+		depth8bit_log1 = depth8bit.copy()
+		depth8bit_count += 1
+		if depth8bit_count > 2:
+			h,w = depth8bit.shape
+			buf = np.min(np.vstack((depth8bit.flatten(),depth8bit_log1.flatten(),depth8bit_log2.flatten())), axis=0)
+			buf = buf.reshape((h,w))
+			cv2.imwrite(os.path.join(DIR_NAME, "data/depth.png"), buf)
+		else:
+			cv2.imwrite(os.path.join(DIR_NAME, "data/depth.png"), depth8bit)
 
 		#depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image[:,160:1120], alpha=0.03), cv2.COLORMAP_JET)
 		#depth_colormap = np.rot90(depth_colormap,3)
