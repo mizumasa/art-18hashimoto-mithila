@@ -91,19 +91,21 @@ void testApp::setup() {
 #endif
     
     gui.setup();
-    gui.add(p_IgnoreLeft.setup("p_IgnoreLeft", 0.1, 0, 1.0));
-    gui.add(p_IgnoreTop.setup("p_IgnoreTop", 0.1, 0, 1.0));
-    gui.add(p_IgnoreRight.setup("p_IgnoreRight", 0.9, 0, 1.0));
-    gui.add(p_IgnoreBottom.setup("p_IgnoreBottom", 0.9, 0, 1.0));
+    gui.add(p_IgnoreLeft.setup("p_IgnoreLeft", 0.18, 0, 1.0));
+    gui.add(p_IgnoreTop.setup("p_IgnoreTop", 0.25, 0, 1.0));
+    gui.add(p_IgnoreRight.setup("p_IgnoreRight", 1.0, 0, 1.0));
+    gui.add(p_IgnoreBottom.setup("p_IgnoreBottom", 0.87, 0, 1.0));
     
-    gui.add(p_frameLeft.setup("p_frameLeft", 0.525, 0, 1.0));
-    gui.add(p_frameTop.setup("p_frameTop", 0.315, 0, 1.0));
-    gui.add(p_frameRight.setup("p_frameRight", 0.69, 0, 1.0));
-    gui.add(p_frameBottom.setup("p_frameBottom", 0.485, 0, 1.0));
-    gui.add(p_DepthMin.setup("p_DepthMin", 33, 0, 255));
-    gui.add(p_DepthMax.setup("p_DepthMax", 85, 0, 255));
-    gui.add(p_ReactThr.setup("p_ReactThr", 10, 0, 100));
+    gui.add(p_frameLeft.setup("p_frameLeft", 0.615, 0, 1.0));
+    gui.add(p_frameTop.setup("p_frameTop", 0.33, 0, 1.0));
+    gui.add(p_frameRight.setup("p_frameRight", 0.8, 0, 1.0));
+    gui.add(p_frameBottom.setup("p_frameBottom", 0.49, 0, 1.0));
+    gui.add(p_DepthMin.setup("p_DepthMin", 21, 0, 255));
+    gui.add(p_DepthMax.setup("p_DepthMax", 80, 0, 255));
+    gui.add(p_ReactThr.setup("p_ReactThr", 100, 0, 200));
     gui.add(p_ParticleMax.setup("p_ParticleMax",30,10,40));
+    gui.add(p_ProcessTime.setup("p_ProcessTime",8,6,12));
+    
     gui.setPosition(ofGetWidth()/2, 0);
     
     // load the lines we saved...
@@ -366,7 +368,7 @@ void testApp::draw() {
     
     ofPushMatrix();
     ofScale(CONT_RESIZE/2, CONT_RESIZE/2);
-    contourFinder.draw(ofGetWidth()/2 + drawX,drawY);
+    if(b_Debug)contourFinder.draw(drawX,drawY);
     ofPopMatrix();
 
     
@@ -627,8 +629,8 @@ void testApp::keyPressed(int key) {
             grayImageResize.threshold(10);
             //contourFinder.findContours(grayImageResize, 20,
             //                           (drawW * drawH)/3, 10, true);
-            contourFinder.findContours(grayImageResize, 20,
-                                       ( (drawW/CONT_RESIZE) * (drawH/CONT_RESIZE))/3, 10, true);
+            contourFinder.findContours(grayImageResize, 200,
+                                       ( (drawW/CONT_RESIZE) * (drawH/CONT_RESIZE))/3, 20, true);
 
             ofPoint pointBuf;
             pointBuf.set(drawX, drawY);
@@ -688,8 +690,11 @@ void testApp::makeAvoidImage(){
     grayImage.resize(drawW, drawH);
     grayImageResize.resize(drawW/CONT_RESIZE, drawH/CONT_RESIZE);
     grayImageResize.threshold(10);
-    contourFinder.findContours(grayImageResize, 20,
-                               ( (drawW/CONT_RESIZE) * (drawH/CONT_RESIZE))/3, 10, true);
+    //contourFinder.findContours(grayImageResize, 20,
+    //                           ( (drawW/CONT_RESIZE) * (drawH/CONT_RESIZE))/3, 10, true);
+    contourFinder.findContours(grayImageResize, 200,
+                               ( (drawW/CONT_RESIZE) * (drawH/CONT_RESIZE))/3, 20, true);
+
     ofPoint pointBuf;
     pointBuf.set(drawX, drawY);
     for(int i = 0; i< contourFinder.nBlobs; i++){
@@ -823,10 +828,10 @@ void testApp::setupSequence(){
     sequence.pushData(ofxFragment(22,AID_COUNT_2,1));
     sequence.pushData(ofxFragment(23,AID_COUNT_1,1));
     sequence.pushData(ofxFragment(24,AID_SHOOT,2));
-    sequence.pushData(ofxFragment(25,AID_EDIT,6));
+    sequence.pushData(ofxFragment(25,AID_EDIT,p_ProcessTime));
     sequence.pushData(ofxFragment(26,AID_RESULT_CAPTURE,1,1));
     sequence.pushData(ofxFragment(27,AID_RESULT_SHOW,3));//kokode QR show
-    sequence.pushData(ofxFragment(28,30,AID_RESULT_SHOW_WAIT,60));
+    sequence.pushData(ofxFragment(28,30,AID_RESULT_SHOW_WAIT,120));
     sequence.pushData(ofxFragment(30,10,AID_GOODBYE,1));
     
     sequence.setup();

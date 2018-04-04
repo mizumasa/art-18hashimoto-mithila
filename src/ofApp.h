@@ -169,6 +169,7 @@ public:
     ofxIntSlider p_DepthMax;
     ofxIntSlider p_ReactThr;
     ofxIntSlider p_ParticleMax;
+    ofxIntSlider p_ProcessTime;
 
     ofImage inputCam;
     ofImage cropCam;
